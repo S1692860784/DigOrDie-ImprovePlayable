@@ -88,6 +88,11 @@ namespace MyFirstMod
                 harmony.PatchAll(typeof(Patch_MonsterAI));
             }
 
+            if (ModConfig.EnableWeapons.Value)
+            {
+                harmony.PatchAll(typeof(Patch_DeviceDetector));
+            }
+
             if (ModConfig.EnableLocalization.Value)
             {
                 harmony.PatchAll(typeof(Patch_Localization));

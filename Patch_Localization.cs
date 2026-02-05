@@ -17,7 +17,8 @@ namespace MyFirstMod
 
         static bool Prefix(string id, ref string __result)
         {
-            if (CustomLocales.TryGetValue(id, out string text))
+            string text;
+            if (CustomLocales.TryGetValue(id, out text))
             {
                 __result = text;
                 return false;

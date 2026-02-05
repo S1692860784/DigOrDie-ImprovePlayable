@@ -2,6 +2,7 @@ using UnityEngine;
 using HarmonyLib;
 using System;
 using System.Reflection;
+using System.Collections.Generic;
 
 namespace MyFirstMod
 {
@@ -30,6 +31,15 @@ namespace MyFirstMod
         private static CustomItemWall _obsidianWall;
         private static CItem_Material _energyCrystal;
         private static CItem_Mineral _energyCrystalOre;
+        private static CItem_Device _energyCrystalArmor;
+        private static List<CItem_Device> _oreDetectors = new List<CItem_Device>();
+
+        public static readonly Dictionary<string, string> DetectorTargets = new Dictionary<string, string>();
+
+        public static bool TryGetDetectorTarget(string detectorCodeName, out string mineralCodeName)
+        {
+            return DetectorTargets.TryGetValue(detectorCodeName, out mineralCodeName);
+        }
 
         public static void InitializeContent(ModContentOptions options)
         {
@@ -46,6 +56,7 @@ namespace MyFirstMod
             if (options.EnableBlocks) RegisterBlocks();
             if (options.EnableOres) RegisterMaterialsAndOres();
             if (options.EnableMonsters) RegisterMonsters();
+            if (options.EnableWeapons) RegisterDevices();
             if (options.EnableRecipes) RegisterRecipes();
             if (options.EnableOres) RegisterOreDropsAndSpawns();
             if (options.EnableMonsters) RegisterMonsterDropsAndSpawns();
@@ -69,31 +80,39 @@ namespace MyFirstMod
                 radius: 0.2f,
                 hasTrail: true,
                 lightColor: Color.magenta,
-                critChance: 0.5f,
-                critMultiplier: 10f
+                critChance: 0.05f,
+                critMultiplier: 3f
             );
 
-            _thanosGun = WeaponFactory.CreateAndRegisterWeapon(
+            CItem_Weapon template = GItems.gunLaser;
+            int baseDamage = template != null && template.m_attackDesc != null ? template.m_attackDesc.m_damage : 0;
+            float cooldown = template != null && template.m_attackDesc != null ? template.m_attackDesc.m_cooldown : 0.5f;
+            float fireRate = cooldown > 0f ? 1f / cooldown : 0f;
+            int finalDamage = 8;
+            float damageMultiplier = baseDamage > 0 ? (float)finalDamage / (float)baseDamage : 1f;
+
+            string desc = string.Format("高能步枪，发射能量弹。伤害: {0} 射速: {1:0.##}/秒", finalDamage, fireRate);
+
+            _thanosGun = WeaponFactory.CreateAndRegisterWeaponFromTemplate(
                 codeName: "ThanosGun",
-                displayName: "灭霸之枪",
-                description: "无限能量。",
-                range: 60f,
-                damage: 100,
-                fireRate: 0.2f,
-                bullet: _purpleBullet,
-                sound: "plasma",
+                displayName: "能量步枪",
+                description: desc,
                 textureResourceName: ".Resources.ThanosGun.png",
-                heatPerShot: 0.15f,
-                coolingRate: 0.5f
+                template: template,
+                bulletOverride: _purpleBullet,
+                soundOverride: "plasma",
+                damageMultiplier: damageMultiplier,
+                damageOverride: finalDamage
             );
         }
 
         private static void RegisterBlocks()
         {
+            string desc = "坚硬的火山岩石墙体。耐久: 500 硬度: 6000 重量: 500";
             _obsidianWall = BlockFactory.CreateAndRegisterBlock(
                 codeName: "MyMod_ObsidianWall",
                 displayName: "黑曜石墙",
-                description: "极其坚固的火山岩石墙体。",
+                description: desc,
                 health: 500,
                 hardness: 6000,
                 weight: 500f,
@@ -121,7 +140,7 @@ namespace MyFirstMod
                     trav.Field("m_codeName").SetValue("MyFirstMod_EnergyCrystal");
                     trav.Field("m_nameID").SetValue("MyFirstMod_EnergyCrystal");
                     trav.Field("m_name").SetValue("能量水晶");
-                    trav.Field("m_desc").SetValue("蕴含着原始能量的水晶。");
+                    trav.Field("m_desc").SetValue("蕴含能量的水晶，可用于高级配方。堆叠: 250");
                     trav.Field("m_maxStack").SetValue(250);
 
                     _energyCrystal.m_id = (ushort)GItems.Items.Count;
@@ -136,10 +155,48 @@ namespace MyFirstMod
             _energyCrystalOre = BlockFactory.CreateAndRegisterMineral(
                 codeName: "MyFirstMod_EnergyCrystalOre",
                 displayName: "能量水晶矿",
-                description: "包含能量水晶。",
+                description: "可提取能量水晶。耐久: 500",
                 health: 500,
                 textureResourceName: ".Resources.EnergyCrystalOre.png"
             );
+        }
+
+        private static void RegisterDevices()
+        {
+            _oreDetectors.Clear();
+            DetectorTargets.Clear();
+
+            RegisterArmor();
+
+            List<CItem_Mineral> minerals = GetVanillaMinerals();
+            if (_energyCrystalOre != null)
+            {
+                minerals.Add(_energyCrystalOre);
+            }
+
+            foreach (var mineral in minerals)
+            {
+                if (mineral == null) continue;
+                string oreCode = mineral.m_codeName;
+                string oreName = GetItemName(mineral);
+
+                string detectorCode = "MyFirstMod_Detector_" + oreCode;
+                string detectorName = oreName + "探测器";
+                string detectorDesc = BuildDetectorDesc(GItems.metalDetector, oreName);
+
+                CItem_Device detector = DeviceFactory.CreateAndRegisterDeviceFromTemplate(
+                    template: GItems.metalDetector,
+                    codeName: detectorCode,
+                    displayName: detectorName,
+                    description: detectorDesc
+                );
+
+                if (detector != null)
+                {
+                    _oreDetectors.Add(detector);
+                    DetectorTargets[detectorCode] = oreCode;
+                }
+            }
         }
 
         private static void RegisterMonsters()
@@ -206,7 +263,7 @@ namespace MyFirstMod
         {
             if (_thanosGun != null && _energyCrystal != null)
             {
-                RecipeManager.RegisterRecipe(_thanosGun, GItems.aluminium, 5, _energyCrystal, 20);
+                RecipeManager.RegisterRecipe(_thanosGun, GItems.aluminium, 5, _energyCrystal, 10);
             }
 
             if (_obsidianWall != null)
@@ -214,11 +271,20 @@ namespace MyFirstMod
                 RecipeManager.RegisterRecipe(_obsidianWall, GItems.rock, 10);
             }
 
-            CItem energyCrystalOreItem = GItems.Items.Find(i => i != null && i.m_codeName == "MyFirstMod_EnergyCrystalOre");
-            if (energyCrystalOreItem != null && _energyCrystal != null)
+            if (_energyCrystal != null)
             {
-                CRecipe recycleRecipe = new CRecipe(_energyCrystal, 2, energyCrystalOreItem, 1);
-                RecipeManager.RegisterExistingRecipe(recycleRecipe);
+                foreach (var detector in _oreDetectors)
+                {
+                    if (detector != null)
+                    {
+                        RecipeManager.RegisterRecipe(detector, _energyCrystal, 10);
+                    }
+                }
+            }
+
+            if (_energyCrystalArmor != null && _energyCrystal != null)
+            {
+                RecipeManager.RegisterRecipe(_energyCrystalArmor, _energyCrystal, 10);
             }
         }
 
@@ -311,6 +377,83 @@ namespace MyFirstMod
             catch
             {
                 return null;
+            }
+        }
+
+        private static readonly HashSet<string> DetectorBlacklist = new HashSet<string>
+        {
+            "dirt",
+            "dirtRed",
+            "rock",
+            "hardRock",
+            "sand"
+        };
+
+        private static List<CItem_Mineral> GetVanillaMinerals()
+        {
+            List<CItem_Mineral> list = new List<CItem_Mineral>();
+            FieldInfo[] fields = typeof(GItems).GetFields(BindingFlags.Public | BindingFlags.Static);
+            foreach (var field in fields)
+            {
+                if (typeof(CItem_Mineral).IsAssignableFrom(field.FieldType))
+                {
+                    CItem_Mineral item = field.GetValue(null) as CItem_Mineral;
+                    if (item != null && !IsBlacklistedMineral(item)) list.Add(item);
+                }
+            }
+            return list;
+        }
+
+        private static bool IsBlacklistedMineral(CItem_Mineral item)
+        {
+            string code = item.m_codeName;
+            if (string.IsNullOrEmpty(code)) return false;
+            return DetectorBlacklist.Contains(code);
+        }
+
+
+        private static string GetItemName(CItem item)
+        {
+            if (item == null) return "未知";
+            string name = Traverse.Create(item).Field("m_name").GetValue<string>();
+            if (!string.IsNullOrEmpty(name)) return name;
+            return item.m_codeName;
+        }
+
+        private static string BuildDetectorDesc(CItem_Device template, string oreName)
+        {
+            float duration = 0f;
+            float cooldown = 0f;
+            float range = 0f;
+            if (template != null)
+            {
+                duration = Traverse.Create(template).Field("m_duration").GetValue<float>();
+                cooldown = Traverse.Create(template).Field("m_cooldown").GetValue<float>();
+                range = Traverse.Create(template).Field("m_customValue").GetValue<float>();
+            }
+
+            if (duration > 0f || cooldown > 0f || range > 0f)
+            {
+                return string.Format("探测对象: {0}。范围: {1:0.#} 格 持续: {2:0.##}秒 冷却: {3:0.##}秒", oreName, range, duration, cooldown);
+            }
+            return string.Format("探测对象: {0}。", oreName);
+        }
+
+        private static void RegisterArmor()
+        {
+            CItem_Device template = GItems.armorMk1;
+            if (template == null) return;
+
+            _energyCrystalArmor = DeviceFactory.CreateAndRegisterDeviceFromTemplate(
+                template: template,
+                codeName: "MyFirstMod_EnergyCrystalArmor",
+                displayName: "能量水晶护甲",
+                description: "基础护甲。防御: 2"
+            );
+
+            if (_energyCrystalArmor != null)
+            {
+                Traverse.Create(_energyCrystalArmor).Field("m_customValue").SetValue(2f);
             }
         }
     }

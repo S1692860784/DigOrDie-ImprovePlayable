@@ -25,6 +25,13 @@ namespace MyFirstMod
             return CreateTile(sprite, texture, "SurfaceOpaque");
         }
 
+        // 矿物叠加层使用带边界混合的材质，便于透明区域正确叠加
+        private static CTile CreateOverlayTile(Texture2D texture)
+        {
+            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f), texture.height);
+            return CreateTile(sprite, texture, "SurfaceBorders");
+        }
+
         public static CItem_Mineral CreateAndRegisterMineral(
             string codeName, string displayName, string description,
             ushort health, string textureResourceName)
@@ -36,24 +43,32 @@ namespace MyFirstMod
             Texture2D customTexture = ResourceLoader.CreateTexture(imageData);
             if (customTexture == null) return null;
 
-            CSurface mineralSurface = new CSurface("rock", 0, -1, -1, false, null, null, false);
+            CItem_Mineral template = GItems.iron;
+            if (template == null) return null;
 
-            CTile mineralOverlayTile = CreateWorldTile(customTexture);
+            CItem_Mineral newMineral = ShallowClone(template);
+
+            CSurface mineralSurface = new CSurface("rock", 0, -1, -1, false, null, null, false);
+            CTile mineralOverlayTile = CreateOverlayTile(customTexture);
             CTile worldDisplayTile = CreateWorldTile(customTexture);
             CTile iconTile = CreateIconTile(customTexture);
 
             Traverse.Create(mineralSurface).Field("m_topIcon").SetValue(mineralOverlayTile);
 
-            Color avgColor = CalculateAverageColor(customTexture);
+            Color32 avgColor = CalculateAverageColor(customTexture);
 
-            CItem_Mineral newMineral = new CItem_Mineral(worldDisplayTile, iconTile, health, (uint)avgColor.GetHashCode(), mineralSurface, false);
-            newMineral.m_isDisplayInSameDirection = true;
-
-            newMineral.m_codeName = codeName;
             var trav = Traverse.Create(newMineral);
+            trav.Field("m_surface").SetValue(mineralSurface);
+            trav.Field("m_tile").SetValue(worldDisplayTile);
+            trav.Field("m_tileIcon").SetValue(iconTile);
+            trav.Field("m_codeName").SetValue(codeName);
             trav.Field("m_name").SetValue(displayName);
             trav.Field("m_desc").SetValue(description);
+            trav.Field("m_hpMax").SetValue(health);
+            trav.Field("m_mainColor").SetValue(avgColor);
+            trav.Field("m_canBeMetalDetected").SetValue(true);
 
+            newMineral.m_isDisplayInSameDirection = true;
             newMineral.m_id = (ushort)GItems.Items.Count;
             GItems.Items.Add(newMineral);
             CustomBlocks.Add(newMineral);
@@ -82,7 +97,7 @@ namespace MyFirstMod
             if (worldTile == null || iconTile == null) return null;
 
             CustomItemWall newBlock = new CustomItemWall(worldTile, iconTile, health, 12282173U, hardness, weight, blockType, customSurface);
-            Color avgColor = CalculateAverageColor(customTexture);
+            Color32 avgColor = CalculateAverageColor(customTexture);
             newBlock.m_mainColor = avgColor;
             newBlock.m_codeName = codeName;
             Traverse.Create(newBlock).Field("m_name").SetValue(displayName);
@@ -130,12 +145,19 @@ namespace MyFirstMod
             }
         }
 
-        private static Color CalculateAverageColor(Texture2D tex)
+        private static Color32 CalculateAverageColor(Texture2D tex)
         {
             Color[] pixels = tex.GetPixels();
             float r = 0, g = 0, b = 0;
             foreach (var p in pixels) { r += p.r; g += p.g; b += p.b; }
-            return new Color(r / pixels.Length, g / pixels.Length, b / pixels.Length);
+            Color c = new Color(r / pixels.Length, g / pixels.Length, b / pixels.Length);
+            return (Color32)c;
+        }
+
+        private static T ShallowClone<T>(T source) where T : class
+        {
+            var method = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
+            return (T)method.Invoke(source, null);
         }
     }
 }

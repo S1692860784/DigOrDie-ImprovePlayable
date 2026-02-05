@@ -10,6 +10,67 @@ namespace MyFirstMod
     {
         public static readonly List<CItem> CustomWeapons = new List<CItem>();
 
+        public static CItem_Weapon CreateAndRegisterWeaponFromTemplate(
+            string codeName,
+            string displayName,
+            string description,
+            string textureResourceName,
+            CItem_Weapon template,
+            CBulletDesc bulletOverride,
+            string soundOverride,
+            float damageMultiplier,
+            int damageOverride = 0)
+        {
+            if (template == null) return null;
+            if (GItems.Items.Exists(x => x != null && x.m_codeName == codeName)) return null;
+
+            byte[] imgData = ResourceLoader.LoadResourceBytes(textureResourceName);
+            if (imgData == null) return null;
+            Texture2D customTex = ResourceLoader.CreateTexture(imgData);
+            if (customTex == null) return null;
+
+            CTile worldTile = CreateWeaponTile(customTex, false);
+            CTile iconTile = CreateWeaponTile(customTex, true);
+            if (worldTile == null || iconTile == null) return null;
+
+            CItem_Weapon newGun = ShallowClone(template);
+            var trav = Traverse.Create(newGun);
+            trav.Field("m_codeName").SetValue(codeName);
+            trav.Field("m_name").SetValue(displayName);
+            trav.Field("m_desc").SetValue(description);
+            trav.Field("m_tile").SetValue(worldTile);
+            trav.Field("m_tileIcon").SetValue(iconTile);
+
+            CAttackDesc baseAttack = template.m_attackDesc;
+            int damage = baseAttack.m_damage;
+            if (damageOverride > 0)
+            {
+                damage = damageOverride;
+            }
+            else if (damageMultiplier > 0f)
+            {
+                damage = Mathf.RoundToInt(baseAttack.m_damage * damageMultiplier);
+            }
+            CAttackDesc newAttack = new CAttackDesc(
+                baseAttack.m_range,
+                damage,
+                baseAttack.m_nbAttacks,
+                baseAttack.m_cooldown,
+                baseAttack.m_knockbackOwn,
+                baseAttack.m_knockbackTarget,
+                bulletOverride,
+                soundOverride);
+
+            trav.Field("m_attackDesc").SetValue(newAttack);
+
+            newGun.m_id = (ushort)GItems.Items.Count;
+            GItems.Items.Add(newGun);
+            CustomWeapons.Add(newGun);
+
+            Debug.Log(string.Format(">>> 武器 '{0}' 已注册。", displayName));
+            return newGun;
+        }
+
         public static CItem_Weapon CreateAndRegisterWeapon(
             string codeName, string displayName, string description,
             float range, int damage, float fireRate,
@@ -96,6 +157,12 @@ namespace MyFirstMod
                 Debug.LogError("[Mod] CreateWeaponTile 失败: " + ex);
                 return null;
             }
+        }
+
+        private static T ShallowClone<T>(T source) where T : class
+        {
+            var method = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
+            return (T)method.Invoke(source, null);
         }
     }
 }
