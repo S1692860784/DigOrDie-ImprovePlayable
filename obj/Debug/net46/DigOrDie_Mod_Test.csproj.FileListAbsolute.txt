@@ -1,0 +1,9 @@
+E:\CSCode\DigOrDie_Mod_Test\obj\Debug\net46\DigOrDie_Mod_Test.csproj.AssemblyReference.cache
+E:\CSCode\DigOrDie_Mod_Test\obj\Debug\net46\DigOrDie_Mod_Test.GeneratedMSBuildEditorConfig.editorconfig
+E:\CSCode\DigOrDie_Mod_Test\obj\Debug\net46\DigOrDie_Mod_Test.AssemblyInfoInputs.cache
+E:\CSCode\DigOrDie_Mod_Test\obj\Debug\net46\DigOrDie_Mod_Test.AssemblyInfo.cs
+E:\CSCode\DigOrDie_Mod_Test\obj\Debug\net46\DigOrDie_Mod_Test.csproj.CoreCompileInputs.cache
+E:\CSCode\DigOrDie_Mod_Test\bin\Debug\net46\MyFirstMod.dll
+E:\CSCode\DigOrDie_Mod_Test\bin\Debug\net46\MyFirstMod.pdb
+E:\CSCode\DigOrDie_Mod_Test\obj\Debug\net46\MyFirstMod.dll
+E:\CSCode\DigOrDie_Mod_Test\obj\Debug\net46\MyFirstMod.pdb
