@@ -1,4 +1,3 @@
-// RecipeManager.cs
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,8 +13,6 @@ namespace MyFirstMod
 
         private static readonly List<CustomRecipeEntry> CustomRecipes = new List<CustomRecipeEntry>();
 
-        // 【修正】根据日志显示的真实 ID，修正映射表
-        // 注意：是罗马数字，且中间有空格
         private static readonly Dictionary<int, string> LevelToGroupIdMap = new Dictionary<int, string>
         {
             { 1, "MK I" },
@@ -26,7 +23,6 @@ namespace MyFirstMod
             { 6, "ULTIMATE" }
         };
 
-        // ==================== 注册方法 (保持不变) ====================
         public static void RegisterRecipe(CItem outputItem, CItem material1, int count1, int machineLevel = 1)
         {
             if (outputItem == null) return;
@@ -45,7 +41,6 @@ namespace MyFirstMod
             CustomRecipes.Add(new CustomRecipeEntry { Recipe = recipe, MachineLevel = machineLevel });
         }
 
-        // ==================== 注入方法 ====================
         public static void ApplyRecipes()
         {
             if (CustomRecipes.Count == 0) return;
@@ -55,10 +50,10 @@ namespace MyFirstMod
 
             foreach (var entry in CustomRecipes)
             {
-                // 获取正确的 ID (例如 "MK I")
-                string targetId = LevelToGroupIdMap.ContainsKey(entry.MachineLevel) ? LevelToGroupIdMap[entry.MachineLevel] : "MK I";
-                
-                // 精确查找
+                string targetId = LevelToGroupIdMap.ContainsKey(entry.MachineLevel)
+                    ? LevelToGroupIdMap[entry.MachineLevel]
+                    : "MK I";
+
                 CRecipesGroup targetGroup = allGroups.Find(g => g.m_groupId == targetId);
 
                 if (targetGroup != null)
@@ -67,15 +62,15 @@ namespace MyFirstMod
                     if (!targetGroup.m_recipes.Exists(r => r.IsSameRecipe(entry.Recipe)))
                     {
                         targetGroup.m_recipes.Add(entry.Recipe);
-                        // 这次肯定会看到这行成功的日志！
-                        Debug.Log(string.Format("[Mod] 成功！配方 {0} 已注入 {1}", entry.Recipe.m_out.m_item.m_codeName, targetId));
+                        Debug.Log(string.Format("[Mod] 配方已注入: {0} -> {1}", entry.Recipe.m_out.m_item.m_codeName, targetId));
                     }
                 }
                 else
                 {
-                    Debug.LogError(string.Format("[Mod] 依然找不到组: {0}。请检查罗马数字拼写。", targetId));
+                    Debug.LogError(string.Format("[Mod] 找不到配方组: {0}", targetId));
                 }
             }
+
             CustomRecipes.Clear();
         }
     }

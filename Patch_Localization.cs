@@ -1,13 +1,11 @@
-// Patch_Localization.cs (修复版)
 using HarmonyLib;
-using UnityEngine;
 using System.Collections.Generic;
 using System;
 
 namespace MyFirstMod
 {
     [HarmonyPatch(typeof(SLoc))]
-    [HarmonyPatch("GetText", new Type[] { typeof(string), typeof(bool), typeof(string), typeof(string), typeof(string), typeof(string) })] // 明确指定参数类型
+    [HarmonyPatch("GetText", new Type[] { typeof(string), typeof(bool), typeof(string), typeof(string), typeof(string), typeof(string) })]
     public static class Patch_Localization
     {
         public static Dictionary<string, string> CustomLocales = new Dictionary<string, string>();
@@ -19,8 +17,7 @@ namespace MyFirstMod
 
         static bool Prefix(string id, ref string __result)
         {
-            string text;
-            if (CustomLocales.TryGetValue(id, out text))
+            if (CustomLocales.TryGetValue(id, out string text))
             {
                 __result = text;
                 return false;

@@ -10,7 +10,7 @@ namespace MyFirstMod
     [HarmonyPatch(typeof(CUnitMonster))]
     public static class Patch_MonsterAI
     {
-        // 字段缓存
+        // 反射字段缓存（避免每帧查找）
         private static FieldInfo _fiPfDir, _fiSpeed, _fiForces, _fiTarget, _fiTimeAttack, _fiOnGround, _fiLastFireTime;
         private static bool _isInitialized = false;
         
@@ -45,7 +45,7 @@ namespace MyFirstMod
             catch { }
         }
         
-        // --- 远程AI逻辑 (地面) ---
+        // --- 远程 AI（地面） ---
         private static void UpdateGroundRangedAI(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
         {
             if (IsInAttackRange(monster, target, data.Desc.m_attackDesc.m_range))
@@ -58,7 +58,7 @@ namespace MyFirstMod
             }
         }
 
-        // --- 远程AI逻辑 (飞行) ---
+        // --- 远程 AI（飞行） ---
         private static void UpdateFlyingRangedAI(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
         {
             Vector2 forces = (Vector2)_fiForces.GetValue(monster);
@@ -98,7 +98,7 @@ namespace MyFirstMod
             return Vector2.Distance(monster.PosCenter, target.PosCenter) < range;
         }
 
-        // --- 【核心修复】每次开火都创建全新的 CAttackDesc ---
+        // --- 每次开火都创建新的 CAttackDesc，避免共享状态 ---
         private static void FireRangedAttack(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
         {
             float lastFireTime = (float)_fiLastFireTime.GetValue(monster);
@@ -130,7 +130,7 @@ namespace MyFirstMod
             _fiLastFireTime.SetValue(monster, Time.time);
         }
         
-        // --- 通用 AI 方法 (保持不变) ---
+        // --- 通用 AI 方法 ---
         private static void ProcessTargeting(CUnitMonster monster)
         {
             object targetObj = _fiTarget.GetValue(monster);
@@ -146,7 +146,12 @@ namespace MyFirstMod
         {
             float dist = Math.Abs(monster.Pos.x - target.Pos.x);
             float timeAttack = (_fiTimeAttack != null) ? (float)_fiTimeAttack.GetValue(monster) : 0f;
-            if (timeAttack > 0 || dist < 1.2f)
+            float range = 1.2f;
+            if (monster.UDesc != null && monster.UDesc.m_attackDesc != null)
+            {
+                range = monster.UDesc.m_attackDesc.m_range;
+            }
+            if (timeAttack > 0f || dist < range)
             {
                 Vector2 vel = (Vector2)_fiSpeed.GetValue(monster);
                 vel.x *= 0.8f;

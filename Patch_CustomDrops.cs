@@ -1,7 +1,7 @@
 using HarmonyLib;
 using UnityEngine;
 
-namespace MyFirstMod 
+namespace MyFirstMod
 {
     [HarmonyPatch(typeof(SWorld))]
     [HarmonyPatch("DestroyCell")]
@@ -10,7 +10,7 @@ namespace MyFirstMod
         static bool Prefix(int2 pos)
         {
             if (!SWorld.GridRect.Contains(pos.ToVector2())) return true;
-            
+
             CItem destroyedItem = SWorld.Grid[pos.x, pos.y].GetContent();
             if (destroyedItem == null) return true;
 
@@ -28,15 +28,15 @@ namespace MyFirstMod
                     }
                 }
 
-                // 【修改】使用反射获取 SWorld 单例，绕过编译器检查
                 var worldInst = Traverse.Create(typeof(SSingleton<SWorld>)).Property("Inst").GetValue<SWorld>();
                 if (worldInst != null)
                 {
                     worldInst.SetContent(pos, null);
                 }
-                
-                return false; 
+
+                return false;
             }
+
             return true;
         }
     }

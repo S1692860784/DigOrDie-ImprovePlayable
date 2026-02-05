@@ -15,26 +15,21 @@ namespace MyFirstMod
             float range, int damage, float fireRate,
             CBulletDesc bullet, string sound,
             string textureResourceName,
-            float heatPerShot = 0f, 
-            float coolingRate = 10f) 
+            float heatPerShot = 0f,
+            float coolingRate = 10f)
         {
             if (GItems.Items.Exists(x => x != null && x.m_codeName == codeName)) return null;
 
-            // 1. 加载图片
             byte[] imgData = ResourceLoader.LoadResourceBytes(textureResourceName);
             if (imgData == null) return null;
             Texture2D customTex = ResourceLoader.CreateTexture(imgData);
+            if (customTex == null) return null;
 
-            // 2. 创建 Tile
             CTile worldTile = CreateWeaponTile(customTex, false);
             CTile iconTile = CreateWeaponTile(customTex, true);
-
             if (worldTile == null || iconTile == null) return null;
 
-            // 3. 创建武器
             CAttackDesc attack = new CAttackDesc(range, damage, 1, fireRate, heatPerShot, coolingRate, bullet, sound);
-            
-            // --- 【修复点】第3个参数传入 heatPerShot ---
             CItem_Weapon newGun = new CItem_Weapon(worldTile, iconTile, heatPerShot, true, attack);
 
             newGun.m_codeName = codeName;
@@ -47,8 +42,8 @@ namespace MyFirstMod
             newGun.m_id = (ushort)GItems.Items.Count;
             GItems.Items.Add(newGun);
             CustomWeapons.Add(newGun);
-            
-            Debug.Log(string.Format(">>> 武器 '{0}' 已注入。", displayName));
+
+            Debug.Log(string.Format(">>> 武器 '{0}' 已注册。", displayName));
             return newGun;
         }
 
@@ -57,7 +52,7 @@ namespace MyFirstMod
             try
             {
                 Vector2 pivot;
-                float ppu; 
+                float ppu;
 
                 if (isUi)
                 {
@@ -67,7 +62,7 @@ namespace MyFirstMod
                 else
                 {
                     pivot = new Vector2(0.2f, 0.5f);
-                    ppu = texture.width / 1.2f; 
+                    ppu = texture.width / 1.2f;
                 }
 
                 Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), pivot, ppu);
@@ -75,9 +70,8 @@ namespace MyFirstMod
                 var assetSpriteType = AccessTools.TypeByName("CAssetSprite");
                 var spriteCtor = AccessTools.Constructor(assetSpriteType, new[] { typeof(string), typeof(string), typeof(Rect) });
                 var assetSprite = spriteCtor.Invoke(new object[] { "custom_weapon", null, new Rect() });
-                
                 Traverse.Create(assetSprite).Property("Sprite").SetValue(sprite);
-                
+
                 var spriteArray = Array.CreateInstance(assetSpriteType, 1);
                 spriteArray.SetValue(assetSprite, 0);
 
@@ -93,7 +87,6 @@ namespace MyFirstMod
                 var tileTrav = Traverse.Create(tile);
                 tileTrav.Field("m_sprites").SetValue(spriteArray);
                 tileTrav.Field("m_mat").SetValue(assetMat);
-                
                 tileTrav.Field("m_tileSize").SetValue(new int2(texture.width, texture.height));
 
                 return tile;

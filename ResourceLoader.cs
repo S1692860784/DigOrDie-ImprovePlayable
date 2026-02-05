@@ -6,16 +6,14 @@ namespace MyFirstMod
 {
     public static class ResourceLoader
     {
-        /// <summary>
-        /// 从嵌入资源中加载原始图片数据。
-        /// </summary>
+        // 从嵌入资源加载原始图片字节
         public static byte[] LoadResourceBytes(string resourceName)
         {
             var assembly = Assembly.GetExecutingAssembly();
             var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
             {
-                Debug.LogError(string.Format("[Mod] 无法找到嵌入的资源: {0}", resourceName));
+                Debug.LogError(string.Format("[Mod] 无法找到嵌入资源: {0}", resourceName));
                 return null;
             }
 
@@ -24,13 +22,11 @@ namespace MyFirstMod
             return buffer;
         }
 
-        /// <summary>
-        /// 从图片数据创建一个 Texture2D 对象。
-        /// </summary>
+        // 从图片数据创建 Texture2D
         public static Texture2D CreateTexture(byte[] imageData)
         {
             if (imageData == null || imageData.Length == 0) return null;
-            
+
             Texture2D texture = new Texture2D(2, 2);
             if (texture.LoadImage(imageData))
             {
