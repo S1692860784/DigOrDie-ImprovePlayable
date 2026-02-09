@@ -155,8 +155,8 @@ namespace MyFirstMod
             _energyCrystalOre = BlockFactory.CreateAndRegisterMineral(
                 codeName: "MyFirstMod_EnergyCrystalOre",
                 displayName: "能量水晶矿",
-                description: "可提取能量水晶。耐久: 500",
-                health: 500,
+                description: "可提取能量水晶。耐久: 50",
+                health: 50,
                 textureResourceName: ".Resources.EnergyCrystalOre.png"
             );
         }
@@ -300,9 +300,9 @@ namespace MyFirstMod
                 OreCodeName = "MyFirstMod_EnergyCrystalOre",
                 ReplacesBlockCodeName = "rock",
                 MinY = 400,
-                MaxY = 800,
-                VeinSize = 6,
-                Frequency = 0.1f
+                MaxY = 900,
+                VeinSize = 12,
+                Frequency = 0.15f
             });
         }
 
