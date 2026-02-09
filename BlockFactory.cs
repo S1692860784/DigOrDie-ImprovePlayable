@@ -48,18 +48,14 @@ namespace MyFirstMod
 
             CItem_Mineral newMineral = ShallowClone(template);
 
-            CSurface mineralSurface = new CSurface("rock", 0, -1, -1, false, null, null, false);
             CTile mineralOverlayTile = CreateOverlayTile(customTexture);
-            CTile worldDisplayTile = CreateWorldTile(customTexture);
             CTile iconTile = CreateIconTile(customTexture);
-
-            Traverse.Create(mineralSurface).Field("m_topIcon").SetValue(mineralOverlayTile);
 
             Color32 avgColor = CalculateAverageColor(customTexture);
 
             var trav = Traverse.Create(newMineral);
-            trav.Field("m_surface").SetValue(mineralSurface);
-            trav.Field("m_tile").SetValue(worldDisplayTile);
+            trav.Field("m_surface").SetValue(template.m_surface);
+            trav.Field("m_tile").SetValue(mineralOverlayTile);
             trav.Field("m_tileIcon").SetValue(iconTile);
             trav.Field("m_codeName").SetValue(codeName);
             trav.Field("m_name").SetValue(displayName);

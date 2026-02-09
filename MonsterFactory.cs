@@ -68,7 +68,10 @@ namespace MyFirstMod
             CBulletDesc bulletDesc,
             int[] frameCounts = null)
         {
-            if (frameCounts == null) frameCounts = new int[] { 4, 4, 4, 4 };
+            if (frameCounts == null || frameCounts.Length != 4)
+            {
+                frameCounts = new int[] { 4, 4, 4, 4 };
+            }
 
             byte[] imageData = ResourceLoader.LoadResourceBytes(textureResourceName);
             if (imageData == null)
@@ -88,6 +91,10 @@ namespace MyFirstMod
 
             int frameW = texture.width / 4;
             int frameH = texture.height / 4;
+            if (texture.width % 4 != 0 || texture.height % 4 != 0)
+            {
+                Debug.LogWarning(string.Format("[Mod] 怪物贴图尺寸不是 4x4 帧表: {0} ({1}x{2})", codeName, texture.width, texture.height));
+            }
 
             CTilesList anims = (CTilesList)FormatterServices.GetUninitializedObject(typeof(CTilesList));
             anims.m_texture = uniqueTextureName;

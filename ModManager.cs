@@ -27,11 +27,14 @@ namespace MyFirstMod
         // 已创建的内容引用（用于配方、掉落与调试）
         private static CBulletDesc _purpleBullet;
         private static CBulletDesc _energyBullet;
+        private static CBulletDesc _turretBullet;
         private static CItem_Weapon _thanosGun;
         private static CustomItemWall _obsidianWall;
         private static CItem_Material _energyCrystal;
         private static CItem_Mineral _energyCrystalOre;
         private static CItem_Device _energyCrystalArmor;
+        private static CItem_Device _teleporter;
+        private static CItem_Defense _energyTurret;
         private static List<CItem_Device> _oreDetectors = new List<CItem_Device>();
 
         public static readonly Dictionary<string, string> DetectorTargets = new Dictionary<string, string>();
@@ -57,6 +60,7 @@ namespace MyFirstMod
             if (options.EnableOres) RegisterMaterialsAndOres();
             if (options.EnableMonsters) RegisterMonsters();
             if (options.EnableWeapons) RegisterDevices();
+            if (options.EnableBlocks) RegisterDefenses();
             if (options.EnableRecipes) RegisterRecipes();
             if (options.EnableOres) RegisterOreDropsAndSpawns();
             if (options.EnableMonsters) RegisterMonsterDropsAndSpawns();
@@ -167,6 +171,7 @@ namespace MyFirstMod
             DetectorTargets.Clear();
 
             RegisterArmor();
+            RegisterTeleporter();
 
             List<CItem_Mineral> minerals = GetVanillaMinerals();
             if (_energyCrystalOre != null)
@@ -286,6 +291,16 @@ namespace MyFirstMod
             {
                 RecipeManager.RegisterRecipe(_energyCrystalArmor, _energyCrystal, 10);
             }
+
+            if (_teleporter != null && _energyCrystal != null)
+            {
+                RecipeManager.RegisterRecipe(_teleporter, _energyCrystal, 10);
+            }
+
+            if (_energyTurret != null && _energyCrystal != null)
+            {
+                RecipeManager.RegisterRecipe(_energyTurret, _energyCrystal, 10);
+            }
         }
 
         private static void RegisterOreDropsAndSpawns()
@@ -300,9 +315,9 @@ namespace MyFirstMod
                 OreCodeName = "MyFirstMod_EnergyCrystalOre",
                 ReplacesBlockCodeName = "rock",
                 MinY = 400,
-                MaxY = 900,
+                MaxY = 1000,
                 VeinSize = 12,
-                Frequency = 0.15f
+                Frequency = 0.19f
             });
         }
 
@@ -455,6 +470,75 @@ namespace MyFirstMod
             {
                 Traverse.Create(_energyCrystalArmor).Field("m_customValue").SetValue(2f);
             }
+        }
+
+        private static void RegisterTeleporter()
+        {
+            CItem_Device template = GItems.metalDetector;
+            if (template == null) return;
+
+            string desc = "瞬移到鼠标位置。冷却: 30秒";
+            _teleporter = DeviceFactory.CreateAndRegisterDeviceFromTemplate(
+                template: template,
+                codeName: "MyFirstMod_Teleporter",
+                displayName: "能量传送器",
+                description: desc,
+                groupId: "Teleport",
+                type: CItem_Device.Type.Activable,
+                customValue: 0f,
+                cooldown: 30f,
+                duration: 0f
+            );
+        }
+
+        private static void RegisterDefenses()
+        {
+            CItem_Defense template = GItems.turret360;
+            if (template == null) return;
+
+            if (_turretBullet == null && template.m_attack != null)
+            {
+                _turretBullet = BulletFactory.CreateCustomBulletFromTemplate(
+                    template.m_attack.m_bulletDesc,
+                    ".Resources.PurpleBullet.png",
+                    Color.magenta,
+                    hasTrail: false
+                );
+            }
+
+            // 原版 turret360 数值（由 DLL 读取）：HP 25, 探测 10, 攻击范围 8, 伤害 4, 冷却 0.6, 击退 1
+            ushort hp = 50;
+            float rangeDetection = 20f;
+            float angleMin = -9999f;
+            float angleMax = 9999f;
+            float attackRange = 16f;
+            int attackDamage = 8;
+            int attackNb = 2;
+            float attackCooldown = 0.5f;
+            float knockbackOwn = 0f;
+            float knockbackTarget = 2f;
+
+            string desc = string.Format("基础炮塔改良型。伤害: {0} 射程: {1} 冷却: {2:0.##} 探测: {3}",
+                attackDamage, attackRange, attackCooldown, rangeDetection);
+
+            _energyTurret = DefenseFactory.CreateAndRegisterDefenseFromTemplate(
+                template: template,
+                codeName: "MyFirstMod_TurretEnergy",
+                displayName: "能量炮塔",
+                description: desc,
+                hp: hp,
+                rangeDetection: rangeDetection,
+                angleMin: angleMin,
+                angleMax: angleMax,
+                attackRange: attackRange,
+                attackDamage: attackDamage,
+                attackNb: attackNb,
+                attackCooldown: attackCooldown,
+                knockbackOwn: knockbackOwn,
+                knockbackTarget: knockbackTarget,
+                bulletDesc: _turretBullet ?? _purpleBullet,
+                soundName: "plasma"
+            );
         }
     }
 }

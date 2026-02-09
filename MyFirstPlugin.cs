@@ -91,6 +91,7 @@ namespace MyFirstMod
             if (ModConfig.EnableWeapons.Value)
             {
                 harmony.PatchAll(typeof(Patch_DeviceDetector));
+                harmony.PatchAll(typeof(Patch_Teleporter));
             }
 
             if (ModConfig.EnableLocalization.Value)

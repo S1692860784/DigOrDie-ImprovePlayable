@@ -102,7 +102,7 @@ namespace MyFirstMod
         private static void FireRangedAttack(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
         {
             float lastFireTime = (float)_fiLastFireTime.GetValue(monster);
-            if (Time.time < lastFireTime + data.Desc.m_attackDesc.m_cooldown) return;
+            if (GVars.SimuTime < lastFireTime + data.Desc.m_attackDesc.m_cooldown) return;
 
             SBullets sBullets = GameUtils.GetSBullets();
             if (sBullets == null || data.BulletDesc == null) return;
@@ -122,12 +122,13 @@ namespace MyFirstMod
                 data.BulletDesc, // projDesc
                 "plasma" // sound
             );
+            Traverse.Create(freshAttack).Field("m_isFromMonster").SetValue(true);
 
             // 3. 使用这个全新的对象来开火
             sBullets.FireBullet(freshAttack, monster, monster.PosFire, target.PosCenter);
             
             // 4. 更新CD
-            _fiLastFireTime.SetValue(monster, Time.time);
+            _fiLastFireTime.SetValue(monster, GVars.SimuTime);
         }
         
         // --- 通用 AI 方法 ---

@@ -70,8 +70,15 @@ namespace MyFirstMod
                     CItem item = GItems.Items[i];
                     var dataTrav = Traverse.Create(dataInstance);
 
-                    // 所有可放置单元格都视作方块
-                    dataTrav.Field("m_isBlock").SetValue((item is CItemCell) ? 1 : 0);
+                    // 可放置单元格默认视作方块，但防御塔不应阻挡角色/水
+                    if (item is CItem_Defense)
+                    {
+                        dataTrav.Field("m_isBlock").SetValue(0);
+                    }
+                    else
+                    {
+                        dataTrav.Field("m_isBlock").SetValue((item is CItemCell) ? 1 : 0);
+                    }
 
                     if (item is CItem_Wall)
                     {
@@ -80,8 +87,16 @@ namespace MyFirstMod
 
                     if (item is CItemCell)
                     {
-                        dataTrav.Field("m_isBlockDoor").SetValue(((CItemCell)item).IsBlockDoor() ? 1 : 0);
-                        dataTrav.Field("m_isReceivingForces").SetValue(((CItemCell)item).IsReceivingForces() ? 1 : 0);
+                        if (item is CItem_Defense)
+                        {
+                            dataTrav.Field("m_isBlockDoor").SetValue(0);
+                            dataTrav.Field("m_isReceivingForces").SetValue(0);
+                        }
+                        else
+                        {
+                            dataTrav.Field("m_isBlockDoor").SetValue(((CItemCell)item).IsBlockDoor() ? 1 : 0);
+                            dataTrav.Field("m_isReceivingForces").SetValue(((CItemCell)item).IsReceivingForces() ? 1 : 0);
+                        }
                     }
 
                     newDataArray.SetValue(dataInstance, i);
