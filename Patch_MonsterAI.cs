@@ -102,7 +102,10 @@ namespace MyFirstMod
         private static void FireRangedAttack(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
         {
             float lastFireTime = (float)_fiLastFireTime.GetValue(monster);
-            if (GVars.SimuTime < lastFireTime + data.Desc.m_attackDesc.m_cooldown) return;
+            float cooldown = data.Desc.m_attackDesc.m_cooldown;
+            float speedMult = StimEnvironmentManager.GetRangedAttackSpeedMultiplier();
+            if (speedMult > 1f) cooldown /= speedMult;
+            if (GVars.SimuTime < lastFireTime + cooldown) return;
 
             SBullets sBullets = GameUtils.GetSBullets();
             if (sBullets == null || data.BulletDesc == null) return;
@@ -116,7 +119,7 @@ namespace MyFirstMod
                 baseAttack.m_range, 
                 baseAttack.GetDamage(monster), 
                 1, // nbAttacks
-                baseAttack.m_cooldown,
+                cooldown,
                 0f, // knockbackOwn
                 5f, // knockbackTarget
                 data.BulletDesc, // projDesc

@@ -86,12 +86,18 @@ namespace MyFirstMod
             {
                 harmony.PatchAll(typeof(Patch_MonsterLoot));
                 harmony.PatchAll(typeof(Patch_MonsterAI));
+                harmony.PatchAll(typeof(Patch_StimAttackSpeed));
             }
 
             if (ModConfig.EnableWeapons.Value)
             {
                 harmony.PatchAll(typeof(Patch_DeviceDetector));
                 harmony.PatchAll(typeof(Patch_Teleporter));
+            }
+
+            if (ModConfig.EnableRecipes.Value)
+            {
+                harmony.PatchAll(typeof(Patch_AutoBuilderCreative));
             }
 
             if (ModConfig.EnableLocalization.Value)

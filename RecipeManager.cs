@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using HarmonyLib;
+using System;
 
 namespace MyFirstMod
 {
@@ -13,8 +15,13 @@ namespace MyFirstMod
 
         private static readonly List<CustomRecipeEntry> CustomRecipes = new List<CustomRecipeEntry>();
 
+        public const int ModMachineLevel = 0;
+        public const string ModMachineGroupId = "MOD";
+        public static string ModMachineCodeName = "autoBuilderMyMod";
+
         private static readonly Dictionary<int, string> LevelToGroupIdMap = new Dictionary<int, string>
         {
+            { ModMachineLevel, ModMachineGroupId },
             { 1, "MK I" },
             { 2, "MK II" },
             { 3, "MK III" },
@@ -23,19 +30,27 @@ namespace MyFirstMod
             { 6, "ULTIMATE" }
         };
 
-        public static void RegisterRecipe(CItem outputItem, CItem material1, int count1, int machineLevel = 1)
+        public static void SetModMachineCodeName(string codeName)
+        {
+            if (!string.IsNullOrEmpty(codeName))
+            {
+                ModMachineCodeName = codeName;
+            }
+        }
+
+        public static void RegisterRecipe(CItem outputItem, CItem material1, int count1, int machineLevel = ModMachineLevel)
         {
             if (outputItem == null) return;
             CustomRecipes.Add(new CustomRecipeEntry { Recipe = new CRecipe(outputItem, 1, material1, count1), MachineLevel = machineLevel });
         }
 
-        public static void RegisterRecipe(CItem outputItem, CItem material1, int count1, CItem material2, int count2, int machineLevel = 1)
+        public static void RegisterRecipe(CItem outputItem, CItem material1, int count1, CItem material2, int count2, int machineLevel = ModMachineLevel)
         {
             if (outputItem == null) return;
             CustomRecipes.Add(new CustomRecipeEntry { Recipe = new CRecipe(outputItem, 1, material1, count1, material2, count2), MachineLevel = machineLevel });
         }
 
-        public static void RegisterExistingRecipe(CRecipe recipe, int machineLevel = 1)
+        public static void RegisterExistingRecipe(CRecipe recipe, int machineLevel = ModMachineLevel)
         {
             if (recipe == null || recipe.m_out.m_item == null) return;
             CustomRecipes.Add(new CustomRecipeEntry { Recipe = recipe, MachineLevel = machineLevel });
@@ -47,6 +62,8 @@ namespace MyFirstMod
 
             List<CRecipesGroup> allGroups = SDataLua.GetDescList<CRecipesGroup>("list_recipesgroups");
             if (allGroups == null) return;
+
+            EnsureModRecipesGroup(allGroups);
 
             foreach (var entry in CustomRecipes)
             {
@@ -72,6 +89,37 @@ namespace MyFirstMod
             }
 
             CustomRecipes.Clear();
+        }
+
+        private static void EnsureModRecipesGroup(List<CRecipesGroup> allGroups)
+        {
+            if (allGroups.Exists(g => g != null && g.m_groupId == ModMachineGroupId)) return;
+
+            try
+            {
+                var group = new CRecipesGroup();
+
+                var recipes = new List<CRecipe>();
+                var builders = new List<CItem_MachineAutoBuilder>();
+                CItem builderItem = ItemFactory.FindItemByCodeName(ModMachineCodeName);
+                CItem_MachineAutoBuilder builder = builderItem as CItem_MachineAutoBuilder;
+                if (builder != null)
+                {
+                    builders.Add(builder);
+                }
+
+                var trav = Traverse.Create(group);
+                trav.Field("m_groupId").SetValue(ModMachineGroupId);
+                trav.Field("m_recipes").SetValue(recipes);
+                trav.Field("m_autobuilders").SetValue(builders);
+
+                allGroups.Add(group);
+                Debug.Log(string.Format("[Mod] Recipes group added: {0} -> {1}", ModMachineGroupId, ModMachineCodeName));
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("[Mod] Failed to add recipes group: " + ex);
+            }
         }
     }
 }

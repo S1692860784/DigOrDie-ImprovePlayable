@@ -34,8 +34,11 @@ namespace MyFirstMod
         private static CItem_Mineral _energyCrystalOre;
         private static CItem_Device _energyCrystalArmor;
         private static CItem_Device _teleporter;
+        private static CItem_Device _superFlashLight;
         private static CItem_Defense _energyTurret;
         private static List<CItem_Device> _oreDetectors = new List<CItem_Device>();
+        private static CItem _modAssembler;
+        private static CItem _uraniumGenerator;
 
         public static readonly Dictionary<string, string> DetectorTargets = new Dictionary<string, string>();
 
@@ -60,10 +63,12 @@ namespace MyFirstMod
             if (options.EnableOres) RegisterMaterialsAndOres();
             if (options.EnableMonsters) RegisterMonsters();
             if (options.EnableWeapons) RegisterDevices();
+            if (options.EnableBlocks) RegisterMachines();
             if (options.EnableBlocks) RegisterDefenses();
             if (options.EnableRecipes) RegisterRecipes();
             if (options.EnableOres) RegisterOreDropsAndSpawns();
             if (options.EnableMonsters) RegisterMonsterDropsAndSpawns();
+            StimEnvironmentManager.RegisterStimEvent();
 
             Debug.Log("[Mod] 自定义内容初始化完成。");
         }
@@ -74,6 +79,7 @@ namespace MyFirstMod
             Patch_Localization.Register("U_" + MONSTER_FLAME_LIZARD, "火焰蜥蜴");
             Patch_Localization.Register("U_" + MONSTER_ENERGY_CANNON, "能量炮手");
             Patch_Localization.Register("U_" + MONSTER_GHOST_WATCHER, "幽灵观察者");
+            Patch_Localization.Register("ENV_" + StimEnvironmentManager.StimEventId, "兴奋剂");
         }
 
         private static void RegisterWeapons()
@@ -92,7 +98,7 @@ namespace MyFirstMod
             int baseDamage = template != null && template.m_attackDesc != null ? template.m_attackDesc.m_damage : 0;
             float cooldown = template != null && template.m_attackDesc != null ? template.m_attackDesc.m_cooldown : 0.5f;
             float fireRate = cooldown > 0f ? 1f / cooldown : 0f;
-            int finalDamage = 8;
+            int finalDamage = 15;
             float damageMultiplier = baseDamage > 0 ? (float)finalDamage / (float)baseDamage : 1f;
 
             string desc = string.Format("高能步枪，发射能量弹。伤害: {0} 射速: {1:0.##}/秒", finalDamage, fireRate);
@@ -172,6 +178,7 @@ namespace MyFirstMod
 
             RegisterArmor();
             RegisterTeleporter();
+            RegisterSuperFlashlight();
 
             List<CItem_Mineral> minerals = GetVanillaMinerals();
             if (_energyCrystalOre != null)
@@ -287,6 +294,21 @@ namespace MyFirstMod
                 }
             }
 
+            if (_superFlashLight != null && _energyCrystal != null)
+            {
+                RecipeManager.RegisterRecipe(_superFlashLight, _energyCrystal, 5, GItems.lightGem, 5);
+            }
+
+            if (_modAssembler != null)
+            {
+                RecipeManager.RegisterRecipe(_modAssembler, GItems.iron, 5, machineLevel: 1);
+            }
+
+            if (_uraniumGenerator != null && _energyCrystal != null)
+            {
+                RecipeManager.RegisterRecipe(_uraniumGenerator, GItems.uranium, 1, _energyCrystal, 5);
+            }
+
             if (_energyCrystalArmor != null && _energyCrystal != null)
             {
                 RecipeManager.RegisterRecipe(_energyCrystalArmor, _energyCrystal, 10);
@@ -300,6 +322,41 @@ namespace MyFirstMod
             if (_energyTurret != null && _energyCrystal != null)
             {
                 RecipeManager.RegisterRecipe(_energyTurret, _energyCrystal, 10);
+            }
+        }
+
+        private static void RegisterMachines()
+        {
+            CItem autoBuilderMk1 = ItemFactory.FindItemByCodeName("autoBuilderMK1");
+            if (autoBuilderMk1 != null)
+            {
+                _modAssembler = ItemFactory.CreateAndRegisterItemFromTemplate(
+                    autoBuilderMk1,
+                    "autoBuilderMyMod",
+                    "modV1",
+                    "用于制造模组物品的专用组装机。放置后使用交互键打开。"
+                );
+
+                if (_modAssembler != null)
+                {
+                    RecipeManager.SetModMachineCodeName(_modAssembler.m_codeName);
+                }
+            }
+
+            CItem reactor = ItemFactory.FindItemByCodeName("reactor");
+            if (reactor == null)
+            {
+                reactor = ItemFactory.FindItemByCodeName("generatorSun");
+            }
+
+            if (reactor != null)
+            {
+                _uraniumGenerator = ItemFactory.CreateAndRegisterItemFromTemplate(
+                    reactor,
+                    "MyFirstMod_UraniumGenerator",
+                    "铀发电机",
+                    "铀能自律发电机，制造后即可持续发电（5kW）。"
+                );
             }
         }
 
@@ -488,6 +545,24 @@ namespace MyFirstMod
                 customValue: 0f,
                 cooldown: 30f,
                 duration: 0f
+            );
+        }
+
+        private static void RegisterSuperFlashlight()
+        {
+            CItem_Device template = GItems.flashLightMK2;
+            if (template == null) template = GItems.flashLight;
+            if (template == null) return;
+
+            float superRange = 80f;
+            string desc = string.Format("超强手电，亮度极高。照明范围: {0}", superRange);
+
+            _superFlashLight = DeviceFactory.CreateAndRegisterDeviceFromTemplate(
+                template: template,
+                codeName: "MyFirstMod_SuperFlashLight",
+                displayName: "能量手电",
+                description: desc,
+                customValue: superRange
             );
         }
 

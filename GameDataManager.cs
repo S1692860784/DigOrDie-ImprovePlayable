@@ -71,7 +71,7 @@ namespace MyFirstMod
                     var dataTrav = Traverse.Create(dataInstance);
 
                     // 可放置单元格默认视作方块，但防御塔不应阻挡角色/水
-                    if (item is CItem_Defense)
+                    if (item is CItem_Defense || item is CItem_MachineAutoBuilder)
                     {
                         dataTrav.Field("m_isBlock").SetValue(0);
                     }
@@ -87,7 +87,7 @@ namespace MyFirstMod
 
                     if (item is CItemCell)
                     {
-                        if (item is CItem_Defense)
+                        if (item is CItem_Defense || item is CItem_MachineAutoBuilder)
                         {
                             dataTrav.Field("m_isBlockDoor").SetValue(0);
                             dataTrav.Field("m_isReceivingForces").SetValue(0);

@@ -31,6 +31,19 @@ namespace MyFirstMod
                 Debug.Log("[Mod Debug] " + status);
             }
 
+            if (Input.GetKeyDown(KeyCode.F7))
+            {
+                _lastToggleTime = Time.unscaledTime;
+                StimEnvironmentManager.ForceStimEvent(120f);
+                float mult = StimEnvironmentManager.GetMoveSpeedMultiplier();
+                string msg = string.Format("兴奋剂事件触发（移速 x{0:0.##}）", mult);
+                if (G.m_player != null)
+                {
+                    SSingletonScreen<SScreenHud>.Inst.AddPopText(msg, G.m_player.Pos, SScreenHud.PopTextType.Bonus);
+                }
+                Debug.Log("[Mod Debug] " + msg);
+            }
+
             // 强制锁定逻辑
             // 只有当游戏没有暂停（Time.timeScale != 0）时才应用加速
             // 这样不会影响 F2 打开背包时的暂停功能
