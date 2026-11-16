@@ -21,6 +21,7 @@ namespace ImprovePlayable
                 ModConfig.EnableDebugHotkeys.Value = true;
             }
             loader.AddComponent<DebugHelper>();
+            loader.AddComponent<DebugPanel>();
         }
     }
 
