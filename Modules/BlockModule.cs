@@ -13,17 +13,29 @@ namespace ImprovePlayable
 
         public void Initialize()
         {
-            string desc = "坚硬的火山岩石墙体。耐久: 500 硬度: 6000 重量: 500";
-            ObsidianWall = BlockFactory.CreateAndRegisterBlock(
-                codeName: "ImprovePlayable_ObsidianWall",
-                displayName: "黑曜石墙",
-                description: desc,
-                health: 500,
-                hardness: 6000,
-                weight: 500f,
-                blockType: CItem_Wall.Type.WallBlock,
-                textureResourceName: ".Resources.ObsidianWall.png"
-            );
+            ItemsConfigContainer container = JsonConfigHelper.LoadOrCreateConfig<ItemsConfigContainer>("Items.json", null);
+            if (container == null || container.blocks == null || container.blocks.Count == 0) return;
+
+            foreach (var cfg in container.blocks)
+            {
+                if (cfg == null || string.IsNullOrEmpty(cfg.codeName)) continue;
+
+                CustomItemWall wall = BlockFactory.CreateAndRegisterBlock(
+                    codeName: cfg.codeName,
+                    displayName: cfg.displayName,
+                    description: cfg.description,
+                    health: cfg.health,
+                    hardness: cfg.hardness,
+                    weight: cfg.weight,
+                    blockType: CItem_Wall.Type.WallBlock,
+                    textureResourceName: cfg.textureResource
+                );
+
+                if (ObsidianWall == null && cfg.codeName == "ImprovePlayable_ObsidianWall")
+                {
+                    ObsidianWall = wall;
+                }
+            }
         }
     }
 }

@@ -35,7 +35,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <EmbeddedResource Include="Resources\*.png">
+    <EmbeddedResource Include="Resources\*.png;Resources\*.json">
       <LogicalName>.Resources.%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>

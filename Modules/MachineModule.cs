@@ -14,36 +14,35 @@ namespace ImprovePlayable
 
         public void Initialize()
         {
-            CItem autoBuilderMk1 = ItemFactory.FindItemByCodeName("autoBuilderMK1");
-            if (autoBuilderMk1 != null)
+            ItemsConfigContainer container = JsonConfigHelper.LoadOrCreateConfig<ItemsConfigContainer>("Items.json", null);
+            if (container == null || container.machines == null || container.machines.Count == 0) return;
+
+            foreach (var cfg in container.machines)
             {
-                ModAssembler = ItemFactory.CreateAndRegisterItemFromTemplate(
-                    autoBuilderMk1,
-                    "ImprovePlayable_AutoBuilder",
-                    "modV1",
-                    "用于制造模组物品的专用组装机。放置后使用交互键打开。"
+                if (cfg == null || string.IsNullOrEmpty(cfg.codeName)) continue;
+
+                CItem template = ItemFactory.FindItemByCodeName(cfg.templateCodeName);
+                if (template == null) continue;
+
+                CItem item = ItemFactory.CreateAndRegisterItemFromTemplate(
+                    template,
+                    cfg.codeName,
+                    cfg.displayName,
+                    cfg.description
                 );
 
-                if (ModAssembler != null)
+                if (item != null)
                 {
-                    RecipeManager.SetModMachineCodeName(ModAssembler.m_codeName);
+                    if (ModAssembler == null && cfg.codeName == "ImprovePlayable_AutoBuilder")
+                    {
+                        ModAssembler = item;
+                        RecipeManager.SetModMachineCodeName(ModAssembler.m_codeName);
+                    }
+                    else if (UraniumGenerator == null && cfg.codeName == "ImprovePlayable_UraniumGenerator")
+                    {
+                        UraniumGenerator = item;
+                    }
                 }
-            }
-
-            CItem reactor = ItemFactory.FindItemByCodeName("reactor");
-            if (reactor == null)
-            {
-                reactor = ItemFactory.FindItemByCodeName("generatorSun");
-            }
-
-            if (reactor != null)
-            {
-                UraniumGenerator = ItemFactory.CreateAndRegisterItemFromTemplate(
-                    reactor,
-                    "ImprovePlayable_UraniumGenerator",
-                    "铀发电机",
-                    "铀能自律发电机，制造后即可持续发电（5kW）。"
-                );
             }
         }
     }

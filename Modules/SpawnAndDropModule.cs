@@ -6,31 +6,12 @@ namespace ImprovePlayable
 
         public bool IsEnabled(ModContentOptions options)
         {
-            return options.EnableOres || options.EnableMonsters;
+            return options.EnableMonsters;
         }
 
         public void Initialize()
         {
-            RegisterOreDropsAndSpawns();
             RegisterMonsterDrops();
-        }
-
-        private void RegisterOreDropsAndSpawns()
-        {
-            if (MiningModule.EnergyCrystalOre != null)
-            {
-                GameDataManager.RegisterCustomDrop("ImprovePlayable_EnergyCrystalOre", "ImprovePlayable_EnergyCrystal", 1, 3);
-            }
-
-            GameDataManager.RegisterOreSpawn(new OreSpawnRule
-            {
-                OreCodeName = "ImprovePlayable_EnergyCrystalOre",
-                ReplacesBlockCodeName = "rock",
-                MinY = 400,
-                MaxY = 1000,
-                VeinSize = 12,
-                Frequency = 0.19f
-            });
         }
 
         private void RegisterMonsterDrops()

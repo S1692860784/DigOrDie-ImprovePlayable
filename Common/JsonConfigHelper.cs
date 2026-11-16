@@ -26,6 +26,11 @@ namespace ImprovePlayable
 
         public static T LoadOrCreateConfig<T>(string fileName, string defaultJson) where T : class
         {
+            if (string.IsNullOrEmpty(defaultJson))
+            {
+                defaultJson = ResourceLoader.LoadResourceString(".Resources." + fileName);
+            }
+
             string dir = GetConfigDirectory();
             if (!string.IsNullOrEmpty(dir))
             {
@@ -56,7 +61,11 @@ namespace ImprovePlayable
                 }
             }
 
-            return JsonUtility.FromJson<T>(defaultJson);
+            if (!string.IsNullOrEmpty(defaultJson))
+            {
+                return JsonUtility.FromJson<T>(defaultJson);
+            }
+            return null;
         }
     }
 }

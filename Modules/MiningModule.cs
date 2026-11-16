@@ -26,48 +26,105 @@ namespace ImprovePlayable
 
         public void Initialize()
         {
-            RegisterMaterialsAndOres();
+            ItemsConfigContainer container = JsonConfigHelper.LoadOrCreateConfig<ItemsConfigContainer>("Items.json", null);
+            if (container != null)
+            {
+                RegisterMaterials(container.materials);
+                RegisterOres(container.ores);
+            }
             RegisterDetectors();
         }
 
-        private void RegisterMaterialsAndOres()
+        private void RegisterMaterials(List<MaterialConfig> materials)
         {
-            CTile energyCrystalTile = ResourceLoader.CreateTileFromResource(".Resources.EnergyCrystal.png");
-            if (energyCrystalTile == null) energyCrystalTile = GItems.iron.m_tileIcon;
+            if (materials == null) return;
 
-            try
+            foreach (var mat in materials)
             {
-                Type materialType = typeof(CItem_Material);
-                Type[] constructorArgTypes = { typeof(CTile), typeof(CTile), typeof(ushort), typeof(uint), typeof(CItemCell.Anchor) };
-                var constructor = materialType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, constructorArgTypes, null);
-                if (constructor != null)
+                if (mat == null || string.IsNullOrEmpty(mat.codeName)) continue;
+
+                CTile tile = ResourceLoader.CreateTileFromResource(mat.textureResource);
+                if (tile == null) tile = GItems.iron.m_tileIcon;
+
+                try
                 {
-                    object[] constructorArgs = { energyCrystalTile, energyCrystalTile, (ushort)0, 0xFFFFFFFF, CItemCell.Anchor.NotPlacable };
-                    EnergyCrystal = (CItem_Material)constructor.Invoke(constructorArgs);
+                    Type materialType = typeof(CItem_Material);
+                    Type[] constructorArgTypes = { typeof(CTile), typeof(CTile), typeof(ushort), typeof(uint), typeof(CItemCell.Anchor) };
+                    var constructor = materialType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, constructorArgTypes, null);
+                    if (constructor != null)
+                    {
+                        object[] constructorArgs = { tile, tile, (ushort)0, 0xFFFFFFFF, CItemCell.Anchor.NotPlacable };
+                        CItem_Material item = (CItem_Material)constructor.Invoke(constructorArgs);
 
-                    var trav = Traverse.Create(EnergyCrystal);
-                    trav.Field("m_codeName").SetValue("ImprovePlayable_EnergyCrystal");
-                    trav.Field("m_nameID").SetValue("ImprovePlayable_EnergyCrystal");
-                    trav.Field("m_name").SetValue("能量水晶");
-                    trav.Field("m_desc").SetValue("蕴含能量的水晶，可用于高级配方。堆叠: 250");
-                    trav.Field("m_maxStack").SetValue(250);
+                        var trav = Traverse.Create(item);
+                        trav.Field("m_codeName").SetValue(mat.codeName);
+                        trav.Field("m_nameID").SetValue(mat.codeName);
+                        trav.Field("m_name").SetValue(mat.displayName);
+                        trav.Field("m_desc").SetValue(mat.description);
+                        trav.Field("m_maxStack").SetValue(mat.maxStack > 0 ? mat.maxStack : 250);
 
-                    EnergyCrystal.m_id = (ushort)GItems.Items.Count;
-                    GItems.Items.Add(EnergyCrystal);
+                        item.m_id = (ushort)GItems.Items.Count;
+                        GItems.Items.Add(item);
+
+                        if (EnergyCrystal == null && mat.codeName == "ImprovePlayable_EnergyCrystal")
+                        {
+                            EnergyCrystal = item;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError(string.Format("[Mod] 创建材料 '{0}' 失败: {1}", mat.codeName, ex.Message));
                 }
             }
-            catch (Exception ex)
-            {
-                Debug.LogError("[Mod] 创建 Energy Crystal 失败: " + ex);
-            }
+        }
 
-            EnergyCrystalOre = BlockFactory.CreateAndRegisterMineral(
-                codeName: "ImprovePlayable_EnergyCrystalOre",
-                displayName: "能量水晶矿",
-                description: "可提取能量水晶。耐久: 50",
-                health: 50,
-                textureResourceName: ".Resources.EnergyCrystalOre.png"
-            );
+        private void RegisterOres(List<OreConfig> ores)
+        {
+            if (ores == null) return;
+
+            foreach (var ore in ores)
+            {
+                if (ore == null || string.IsNullOrEmpty(ore.codeName)) continue;
+
+                CItem_Mineral mineral = BlockFactory.CreateAndRegisterMineral(
+                    codeName: ore.codeName,
+                    displayName: ore.displayName,
+                    description: ore.description,
+                    health: ore.health > 0 ? ore.health : 50,
+                    textureResourceName: ore.textureResource
+                );
+
+                if (EnergyCrystalOre == null && ore.codeName == "ImprovePlayable_EnergyCrystalOre")
+                {
+                    EnergyCrystalOre = mineral;
+                }
+
+                // 注册挖掘掉落物
+                if (!string.IsNullOrEmpty(ore.dropItemCodeName))
+                {
+                    GameDataManager.RegisterCustomDrop(
+                        ore.codeName,
+                        ore.dropItemCodeName,
+                        ore.minDrop > 0 ? ore.minDrop : 1,
+                        ore.maxDrop >= ore.minDrop ? ore.maxDrop : 3
+                    );
+                }
+
+                // 注册矿脉自然生成规则
+                if (!string.IsNullOrEmpty(ore.replaceBlockCodeName) && ore.frequency > 0f)
+                {
+                    GameDataManager.RegisterOreSpawn(new OreSpawnRule
+                    {
+                        OreCodeName = ore.codeName,
+                        ReplacesBlockCodeName = ore.replaceBlockCodeName,
+                        MinY = ore.spawnMinY,
+                        MaxY = ore.spawnMaxY,
+                        VeinSize = ore.veinSize > 0 ? ore.veinSize : 12,
+                        Frequency = ore.frequency
+                    });
+                }
+            }
         }
 
         private void RegisterDetectors()
@@ -76,7 +133,7 @@ namespace ImprovePlayable
             ModManager.DetectorTargets.Clear();
 
             List<CItem_Mineral> minerals = GetVanillaMinerals();
-            if (EnergyCrystalOre != null)
+            if (EnergyCrystalOre != null && !minerals.Contains(EnergyCrystalOre))
             {
                 minerals.Add(EnergyCrystalOre);
             }
@@ -108,11 +165,7 @@ namespace ImprovePlayable
 
         private static readonly HashSet<string> DetectorBlacklist = new HashSet<string>
         {
-            "dirt",
-            "dirtRed",
-            "rock",
-            "hardRock",
-            "sand"
+            "dirt", "dirtRed", "rock", "hardRock", "sand"
         };
 
         private static List<CItem_Mineral> GetVanillaMinerals()
@@ -147,9 +200,7 @@ namespace ImprovePlayable
 
         private static string BuildDetectorDesc(CItem_Device template, string oreName)
         {
-            float duration = 0f;
-            float cooldown = 0f;
-            float range = 0f;
+            float duration = 0f, cooldown = 0f, range = 0f;
             if (template != null)
             {
                 duration = Traverse.Create(template).Field("m_duration").GetValue<float>();

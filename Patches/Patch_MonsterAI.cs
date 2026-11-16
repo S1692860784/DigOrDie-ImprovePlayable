@@ -1,7 +1,5 @@
 using System;
 using System.Reflection;
-using System.Collections.Generic;
-using BepInEx;
 using HarmonyLib;
 using UnityEngine;
 
@@ -10,169 +8,172 @@ namespace ImprovePlayable
     [HarmonyPatch(typeof(CUnitMonster))]
     public static class Patch_MonsterAI
     {
-        // 反射字段缓存（避免每帧查找）
-        private static FieldInfo _fiPfDir, _fiSpeed, _fiForces, _fiTarget, _fiTimeAttack, _fiOnGround, _fiLastFireTime;
+        private static FieldInfo _fiPfDir;
+        private static FieldInfo _fiSpeed;
+        private static FieldInfo _fiForces;
+        private static FieldInfo _fiTarget;
+        private static FieldInfo _fiTimeAttack;
+        private static FieldInfo _fiOnGround;
+        private static FieldInfo _fiLastFireTime;
+        private static FieldInfo _fiLookingDir;
         private static bool _isInitialized = false;
-        
-        private const float GRAVITY_COMPENSATION = 50.0f;
+
+        private const float HOVER_GRAVITY_COMPENSATION = 35.0f;
 
         [HarmonyPatch("Update")]
         [HarmonyPrefix]
         public static void Prefix_Update(CUnitMonster __instance)
         {
             if (!_isInitialized) InitializeReflection();
-            if (!__instance.IsAlive()) return;
+            if (__instance == null || !__instance.IsAlive()) return;
 
-            string codeName = __instance.UDesc.m_codeName;
-            if (!MonsterFactory.CustomMonsters.ContainsKey(codeName)) return;
+            string codeName = __instance.UDesc != null ? __instance.UDesc.m_codeName : null;
+            if (string.IsNullOrEmpty(codeName) || !MonsterFactory.CustomMonsters.ContainsKey(codeName)) return;
 
             try
             {
                 var monsterData = MonsterFactory.CustomMonsters[codeName];
                 ProcessTargeting(__instance);
 
-                object targetObj = _fiTarget.GetValue(__instance);
-                if (targetObj == null) return;
+                CUnit target = _fiTarget.GetValue(__instance) as CUnit;
+                if (target == null || !target.IsAlive()) return;
+
+                // 同步怪物面部朝向目标
+                UpdateLookingDirection(__instance, target);
 
                 switch (monsterData.AIType)
                 {
-                    case MonsterAIType.Ground:       UpdateGroundMeleeAI(__instance, (CUnit)targetObj); break;
-                    case MonsterAIType.Flying:       UpdateFlyingAI(__instance, (CUnit)targetObj);      break;
-                    case MonsterAIType.GroundRanged: UpdateGroundRangedAI(__instance, (CUnit)targetObj, monsterData); break;
-                    case MonsterAIType.FlyingRanged: UpdateFlyingRangedAI(__instance, (CUnit)targetObj, monsterData); break;
+                    case MonsterAIType.Ground:
+                        UpdateGroundMeleeAI(__instance, target);
+                        break;
+                    case MonsterAIType.Flying:
+                        UpdateFlyingMeleeAI(__instance, target);
+                        break;
+                    case MonsterAIType.GroundRanged:
+                        UpdateGroundRangedAI(__instance, target, monsterData);
+                        break;
+                    case MonsterAIType.FlyingRanged:
+                        UpdateFlyingRangedAI(__instance, target, monsterData);
+                        break;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[Mod] 怪物 AI 异常: " + ex.Message);
+            }
         }
-        
-        // --- 远程 AI（地面） ---
+
+        private static void UpdateLookingDirection(CUnitMonster monster, CUnit target)
+        {
+            if (_fiLookingDir == null) return;
+            Vector2 dir = (target.PosCenter - monster.PosCenter).normalized;
+            _fiLookingDir.SetValue(monster, dir);
+        }
+
+        // --- 地面远程 AI ---
         private static void UpdateGroundRangedAI(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
         {
-            if (IsInAttackRange(monster, target, data.Desc.m_attackDesc.m_range))
+            float dist = Vector2.Distance(monster.PosCenter, target.PosCenter);
+            float range = data.Desc.m_attackDesc.m_range;
+
+            if (dist <= range)
             {
-                BrakeAndFire(monster, target, data);
+                // 进入射程：阻断原版寻路继续无脑冲脸
+                if (_fiPfDir != null)
+                {
+                    // 若玩家靠太近（小于 4 格），轻微后撤拉扯距离；否则原地定点射击
+                    if (dist < 4.0f)
+                    {
+                        float retreatX = monster.PosCenter.x > target.PosCenter.x ? 0.8f : -0.8f;
+                        _fiPfDir.SetValue(monster, new Vector2(retreatX, 0f));
+                    }
+                    else
+                    {
+                        _fiPfDir.SetValue(monster, Vector2.zero);
+                    }
+                }
+
+                // 减速刹车
+                Vector2 vel = (Vector2)_fiSpeed.GetValue(monster);
+                vel.x *= 0.75f;
+                _fiSpeed.SetValue(monster, vel);
+
+                FireRangedAttack(monster, target, data);
             }
             else
             {
+                // 超出射程：恢复原版地面正常寻路与跳跃
                 UpdateGroundMovement(monster);
             }
         }
 
-        // --- 远程 AI（飞行） ---
+        // --- 飞行近战 AI ---
+        private static void UpdateFlyingMeleeAI(CUnitMonster monster, CUnit target)
+        {
+            ApplySmoothFlyingMovement(monster, target.PosCenter, 0.96f);
+        }
+
+        // --- 飞行远程 AI ---
         private static void UpdateFlyingRangedAI(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
         {
-            Vector2 forces = (Vector2)_fiForces.GetValue(monster);
-            forces.y += GRAVITY_COMPENSATION * Time.deltaTime;
+            float dist = Vector2.Distance(monster.PosCenter, target.PosCenter);
+            float range = data.Desc.m_attackDesc.m_range;
 
-            if (IsInAttackRange(monster, target, data.Desc.m_attackDesc.m_range))
+            if (dist <= range)
             {
-                HoverAndFire(monster, target, data);
-            }
-            else 
-            {
-                UpdateFlyingMovement(monster, target, forces);
-            }
-            
-            _fiForces.SetValue(monster, forces);
-        }
-
-        // --- 行为封装 ---
-        private static void BrakeAndFire(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
-        {
-            Vector2 vel = (Vector2)_fiSpeed.GetValue(monster);
-            vel.x *= 0.8f;
-            _fiSpeed.SetValue(monster, vel);
-            FireRangedAttack(monster, target, data);
-        }
-        
-        private static void HoverAndFire(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
-        {
-            Vector2 vel = (Vector2)_fiSpeed.GetValue(monster);
-            vel *= 0.95f;
-            _fiSpeed.SetValue(monster, vel);
-            FireRangedAttack(monster, target, data);
-        }
-        
-        private static bool IsInAttackRange(CUnitMonster monster, CUnit target, float range)
-        {
-            return Vector2.Distance(monster.PosCenter, target.PosCenter) < range;
-        }
-
-        // --- 每次开火都创建新的 CAttackDesc，避免共享状态 ---
-        private static void FireRangedAttack(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
-        {
-            float lastFireTime = (float)_fiLastFireTime.GetValue(monster);
-            float cooldown = data.Desc.m_attackDesc.m_cooldown;
-            float speedMult = StimEnvironmentManager.GetRangedAttackSpeedMultiplier();
-            if (speedMult > 1f) cooldown /= speedMult;
-            if (GVars.SimuTime < lastFireTime + cooldown) return;
-
-            SBullets sBullets = GameUtils.GetSBullets();
-            if (sBullets == null || data.BulletDesc == null) return;
-            
-            // 1. 获取基础攻击描述
-            CAttackDesc baseAttack = data.Desc.m_attackDesc;
-            
-            // 2. 每次开火都 new 一个全新的 CAttackDesc 对象
-            //    这完全模仿了游戏原版玩家开火时的行为，确保没有任何状态被共享
-            CAttackDesc freshAttack = new CAttackDesc(
-                baseAttack.m_range, 
-                baseAttack.GetDamage(monster), 
-                1, // nbAttacks
-                cooldown,
-                0f, // knockbackOwn
-                5f, // knockbackTarget
-                data.BulletDesc, // projDesc
-                "plasma" // sound
-            );
-            Traverse.Create(freshAttack).Field("m_isFromMonster").SetValue(true);
-
-            // 3. 使用这个全新的对象来开火
-            sBullets.FireBullet(freshAttack, monster, monster.PosFire, target.PosCenter);
-            
-            // 4. 更新CD
-            _fiLastFireTime.SetValue(monster, GVars.SimuTime);
-        }
-        
-        // --- 通用 AI 方法 ---
-        private static void ProcessTargeting(CUnitMonster monster)
-        {
-            object targetObj = _fiTarget.GetValue(monster);
-            CUnit targetUnit = targetObj as CUnit;
-            if (targetUnit == null || !targetUnit.IsAlive())
-            {
-                targetUnit = SUnits.GetClosestPlayer(monster.Pos, 100f);
-                if (targetUnit != null) _fiTarget.SetValue(monster, targetUnit);
-            }
-        }
-        
-        private static void UpdateGroundMeleeAI(CUnitMonster monster, CUnit target)
-        {
-            float dist = Math.Abs(monster.Pos.x - target.Pos.x);
-            float timeAttack = (_fiTimeAttack != null) ? (float)_fiTimeAttack.GetValue(monster) : 0f;
-            float range = 1.2f;
-            if (monster.UDesc != null && monster.UDesc.m_attackDesc != null)
-            {
-                range = monster.UDesc.m_attackDesc.m_range;
-            }
-            if (timeAttack > 0f || dist < range)
-            {
+                // 在射程内悬停并开火
                 Vector2 vel = (Vector2)_fiSpeed.GetValue(monster);
-                vel.x *= 0.8f;
+                vel *= 0.90f; // 稳定悬停阻尼
+
+                // 轻度悬浮在玩家斜上方 3 格位置，避免贴脸
+                Vector2 hoverTarget = target.PosCenter + new Vector2(monster.PosCenter.x > target.PosCenter.x ? 6f : -6f, 3f);
+                Vector2 driftDir = (hoverTarget - monster.PosCenter).normalized;
+                vel += driftDir * (5f * Time.deltaTime);
+
                 _fiSpeed.SetValue(monster, vel);
-                return;
+
+                FireRangedAttack(monster, target, data);
             }
-            UpdateGroundMovement(monster);
+            else
+            {
+                // 追逐玩家
+                ApplySmoothFlyingMovement(monster, target.PosCenter + new Vector2(0f, 2f), 0.97f);
+            }
         }
 
-        private static void UpdateFlyingAI(CUnitMonster monster, CUnit target)
+        // --- 平滑飞行运动核心逻辑 ---
+        private static void ApplySmoothFlyingMovement(CUnitMonster monster, Vector2 targetPos, float damping)
         {
+            Vector2 pos = monster.PosCenter;
+            Vector2 vel = (Vector2)_fiSpeed.GetValue(monster);
+            Vector2 dir = (targetPos - pos).normalized;
+            float maxSpeed = monster.UDesc != null ? monster.UDesc.GetSpeedMax() : 6.0f;
+            float accel = 25.0f;
+            float dt = Time.deltaTime;
+
+            // 直接通过速度矢量控制全向飞行，克服地面网格寻路局限
+            vel += dir * (accel * dt);
+            if (vel.magnitude > maxSpeed)
+            {
+                vel = vel.normalized * maxSpeed;
+            }
+
+            // 空气阻尼保持飞行手感
+            vel *= damping;
+            _fiSpeed.SetValue(monster, vel);
+
+            // 抵消原版重力持续下拉
             Vector2 forces = (Vector2)_fiForces.GetValue(monster);
-            forces.y += GRAVITY_COMPENSATION * Time.deltaTime;
+            forces.y += HOVER_GRAVITY_COMPENSATION * dt;
             _fiForces.SetValue(monster, forces);
-            UpdateFlyingMovement(monster, target, forces);
+
+            // 清理地面寻路方向干扰
+            if (_fiPfDir != null)
+            {
+                _fiPfDir.SetValue(monster, dir);
+            }
         }
-        
+
         private static void UpdateGroundMovement(CUnitMonster monster)
         {
             Vector2 pfDir = (Vector2)_fiPfDir.GetValue(monster);
@@ -182,8 +183,10 @@ namespace ImprovePlayable
             float maxSpeed = monster.UDesc.GetSpeedMax();
             float accel = 40.0f;
             float dt = Time.deltaTime;
+
             if (pfDir.x > 0.1f && vel.x < maxSpeed) forces.x += accel * dt;
             else if (pfDir.x < -0.1f && vel.x > -maxSpeed) forces.x -= accel * dt;
+
             bool isStuck = Math.Abs(pfDir.x) > 0.5f && Math.Abs(vel.x) < 0.1f;
             if (onGround && (pfDir.y > 0.1f || isStuck))
             {
@@ -192,23 +195,51 @@ namespace ImprovePlayable
             }
             _fiForces.SetValue(monster, forces);
         }
-        
-        private static void UpdateFlyingMovement(CUnitMonster monster, CUnit target, Vector2 forces)
+
+        private static void FireRangedAttack(CUnitMonster monster, CUnit target, MonsterFactory.CustomMonsterData data)
         {
-            Vector2 vel = (Vector2)_fiSpeed.GetValue(monster);
-            Vector2 targetPos = target.PosCenter;
-            targetPos.y += 1.0f; 
-            Vector2 dirToTarget = (targetPos - monster.PosCenter).normalized;
-            float maxSpeed = monster.UDesc.GetSpeedMax();
-            float accel = 20.0f;
-            float dt = Time.deltaTime;
-            if (dirToTarget.x > 0.1f && vel.x < maxSpeed) forces.x += accel * dt;
-            else if (dirToTarget.x < -0.1f && vel.x > -maxSpeed) forces.x -= accel * dt;
-            if (dirToTarget.y > 0.1f && vel.y < maxSpeed) forces.y += accel * dt;
-            else if (dirToTarget.y < -0.1f && vel.y > -maxSpeed) forces.y -= accel * dt;
-            vel *= 0.98f;
-            _fiSpeed.SetValue(monster, vel);
-            _fiForces.SetValue(monster, forces);
+            float lastFireTime = (float)_fiLastFireTime.GetValue(monster);
+            float cooldown = data.Desc.m_attackDesc.m_cooldown;
+            float speedMult = StimEnvironmentManager.GetRangedAttackSpeedMultiplier();
+            if (speedMult > 1f) cooldown /= speedMult;
+
+            if (GVars.SimuTime < lastFireTime + cooldown) return;
+
+            SBullets sBullets = GameUtils.GetSBullets();
+            if (sBullets == null || data.BulletDesc == null) return;
+
+            CAttackDesc baseAttack = data.Desc.m_attackDesc;
+            CAttackDesc freshAttack = new CAttackDesc(
+                baseAttack.m_range,
+                baseAttack.GetDamage(monster),
+                1,
+                cooldown,
+                0f,
+                5f,
+                data.BulletDesc,
+                "plasma"
+            );
+            Traverse.Create(freshAttack).Field("m_isFromMonster").SetValue(true);
+
+            // 发射子弹：以怪物中心为起点，精准指向目标中心
+            Vector2 firePos = monster.PosCenter;
+            sBullets.FireBullet(freshAttack, monster, firePos, target.PosCenter);
+
+            _fiLastFireTime.SetValue(monster, GVars.SimuTime);
+        }
+
+        private static void ProcessTargeting(CUnitMonster monster)
+        {
+            object targetObj = _fiTarget.GetValue(monster);
+            CUnit targetUnit = targetObj as CUnit;
+            if (targetUnit == null || !targetUnit.IsAlive())
+            {
+                targetUnit = SUnits.GetClosestPlayer(monster.Pos, 100f);
+                if (targetUnit != null)
+                {
+                    _fiTarget.SetValue(monster, targetUnit);
+                }
+            }
         }
 
         private static void InitializeReflection()
@@ -223,8 +254,12 @@ namespace ImprovePlayable
                 _fiSpeed = AccessTools.Field(typeof(CUnit), "m_speed");
                 _fiForces = AccessTools.Field(typeof(CUnit), "m_forces");
                 _fiOnGround = AccessTools.Field(typeof(CUnit), "m_onGround");
+                _fiLookingDir = AccessTools.Field(typeof(CUnit), "m_lookingDirection");
             }
-            finally { _isInitialized = true; }
+            finally
+            {
+                _isInitialized = true;
+            }
         }
     }
 }

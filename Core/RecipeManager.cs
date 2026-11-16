@@ -50,6 +50,12 @@ namespace ImprovePlayable
             CustomRecipes.Add(new CustomRecipeEntry { Recipe = new CRecipe(outputItem, 1, material1, count1, material2, count2), MachineLevel = machineLevel });
         }
 
+        public static void RegisterRecipe(CItem outputItem, CItem material1, int count1, CItem material2, int count2, CItem material3, int count3, int machineLevel = ModMachineLevel)
+        {
+            if (outputItem == null) return;
+            CustomRecipes.Add(new CustomRecipeEntry { Recipe = new CRecipe(outputItem, 1, material1, count1, material2, count2, material3, count3, false), MachineLevel = machineLevel });
+        }
+
         public static void RegisterExistingRecipe(CRecipe recipe, int machineLevel = ModMachineLevel)
         {
             if (recipe == null || recipe.m_out.m_item == null) return;

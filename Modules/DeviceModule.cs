@@ -18,64 +18,78 @@ namespace ImprovePlayable
 
         public void Initialize()
         {
-            RegisterArmor();
-            RegisterTeleporter();
-            RegisterSuperFlashlight();
-        }
+            ItemsConfigContainer container = JsonConfigHelper.LoadOrCreateConfig<ItemsConfigContainer>("Items.json", null);
+            if (container == null || container.devices == null || container.devices.Count == 0) return;
 
-        private void RegisterArmor()
-        {
-            CItem_Device template = GItems.armorMk1;
-            if (template == null) return;
-
-            EnergyCrystalArmor = DeviceFactory.CreateAndRegisterDeviceFromTemplate(
-                template: template,
-                codeName: "ImprovePlayable_EnergyCrystalArmor",
-                displayName: "能量水晶护甲",
-                description: "基础护甲。防御: 2"
-            );
-
-            if (EnergyCrystalArmor != null)
+            foreach (var cfg in container.devices)
             {
-                Traverse.Create(EnergyCrystalArmor).Field("m_customValue").SetValue(2f);
+                if (cfg == null || string.IsNullOrEmpty(cfg.codeName)) continue;
+
+                if (cfg.deviceType == "Armor")
+                {
+                    CItem_Device template = GItems.armorMk1;
+                    if (template == null) continue;
+
+                    CItem_Device armor = DeviceFactory.CreateAndRegisterDeviceFromTemplate(
+                        template: template,
+                        codeName: cfg.codeName,
+                        displayName: cfg.displayName,
+                        description: cfg.description
+                    );
+
+                    if (armor != null)
+                    {
+                        Traverse.Create(armor).Field("m_customValue").SetValue(cfg.customValue > 0f ? cfg.customValue : 2f);
+                        if (EnergyCrystalArmor == null && cfg.codeName == "ImprovePlayable_EnergyCrystalArmor")
+                        {
+                            EnergyCrystalArmor = armor;
+                        }
+                    }
+                }
+                else if (cfg.deviceType == "Teleport")
+                {
+                    CItem_Device template = GItems.metalDetector;
+                    if (template == null) continue;
+
+                    CItem_Device tp = DeviceFactory.CreateAndRegisterDeviceFromTemplate(
+                        template: template,
+                        codeName: cfg.codeName,
+                        displayName: cfg.displayName,
+                        description: cfg.description,
+                        groupId: "Teleport",
+                        type: CItem_Device.Type.Activable,
+                        customValue: cfg.customValue,
+                        cooldown: cfg.cooldown > 0f ? cfg.cooldown : 30f,
+                        duration: cfg.duration
+                    );
+
+                    if (Teleporter == null && cfg.codeName == "ImprovePlayable_Teleporter")
+                    {
+                        Teleporter = tp;
+                    }
+                }
+                else if (cfg.deviceType == "Flashlight")
+                {
+                    CItem_Device template = GItems.flashLightMK2 ?? GItems.flashLight;
+                    if (template == null) continue;
+
+                    float range = cfg.customValue > 0f ? cfg.customValue : 80f;
+                    string desc = !string.IsNullOrEmpty(cfg.description) ? cfg.description : string.Format("超强手电。照明范围: {0}", range);
+
+                    CItem_Device light = DeviceFactory.CreateAndRegisterDeviceFromTemplate(
+                        template: template,
+                        codeName: cfg.codeName,
+                        displayName: cfg.displayName,
+                        description: desc,
+                        customValue: range
+                    );
+
+                    if (SuperFlashLight == null && cfg.codeName == "ImprovePlayable_SuperFlashLight")
+                    {
+                        SuperFlashLight = light;
+                    }
+                }
             }
-        }
-
-        private void RegisterTeleporter()
-        {
-            CItem_Device template = GItems.metalDetector;
-            if (template == null) return;
-
-            string desc = "瞬移到鼠标位置。冷却: 30秒";
-            Teleporter = DeviceFactory.CreateAndRegisterDeviceFromTemplate(
-                template: template,
-                codeName: "ImprovePlayable_Teleporter",
-                displayName: "能量传送器",
-                description: desc,
-                groupId: "Teleport",
-                type: CItem_Device.Type.Activable,
-                customValue: 0f,
-                cooldown: 30f,
-                duration: 0f
-            );
-        }
-
-        private void RegisterSuperFlashlight()
-        {
-            CItem_Device template = GItems.flashLightMK2;
-            if (template == null) template = GItems.flashLight;
-            if (template == null) return;
-
-            float superRange = 80f;
-            string desc = string.Format("超强手电，亮度极高。照明范围: {0}", superRange);
-
-            SuperFlashLight = DeviceFactory.CreateAndRegisterDeviceFromTemplate(
-                template: template,
-                codeName: "ImprovePlayable_SuperFlashLight",
-                displayName: "能量手电",
-                description: desc,
-                customValue: superRange
-            );
         }
     }
 }

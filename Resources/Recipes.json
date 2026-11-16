@@ -1,0 +1,63 @@
+{
+  "recipes": [
+    {
+      "resultCodeName": "ThanosGun",
+      "machineLevel": 0,
+      "ingredients": [
+        { "itemCodeName": "aluminium", "count": 5 },
+        { "itemCodeName": "ImprovePlayable_EnergyCrystal", "count": 10 }
+      ]
+    },
+    {
+      "resultCodeName": "ImprovePlayable_ObsidianWall",
+      "machineLevel": 0,
+      "ingredients": [
+        { "itemCodeName": "rock", "count": 10 }
+      ]
+    },
+    {
+      "resultCodeName": "ImprovePlayable_SuperFlashLight",
+      "machineLevel": 0,
+      "ingredients": [
+        { "itemCodeName": "ImprovePlayable_EnergyCrystal", "count": 5 },
+        { "itemCodeName": "lightGem", "count": 5 }
+      ]
+    },
+    {
+      "resultCodeName": "ImprovePlayable_AutoBuilder",
+      "machineLevel": 1,
+      "ingredients": [
+        { "itemCodeName": "iron", "count": 5 }
+      ]
+    },
+    {
+      "resultCodeName": "ImprovePlayable_UraniumGenerator",
+      "machineLevel": 0,
+      "ingredients": [
+        { "itemCodeName": "uranium", "count": 1 },
+        { "itemCodeName": "ImprovePlayable_EnergyCrystal", "count": 5 }
+      ]
+    },
+    {
+      "resultCodeName": "ImprovePlayable_EnergyCrystalArmor",
+      "machineLevel": 0,
+      "ingredients": [
+        { "itemCodeName": "ImprovePlayable_EnergyCrystal", "count": 10 }
+      ]
+    },
+    {
+      "resultCodeName": "ImprovePlayable_Teleporter",
+      "machineLevel": 0,
+      "ingredients": [
+        { "itemCodeName": "ImprovePlayable_EnergyCrystal", "count": 10 }
+      ]
+    },
+    {
+      "resultCodeName": "ImprovePlayable_TurretEnergy",
+      "machineLevel": 0,
+      "ingredients": [
+        { "itemCodeName": "ImprovePlayable_EnergyCrystal", "count": 10 }
+      ]
+    }
+  ]
+}

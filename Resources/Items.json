@@ -1,0 +1,110 @@
+{
+  "materials": [
+    {
+      "codeName": "ImprovePlayable_EnergyCrystal",
+      "displayName": "能量水晶",
+      "description": "蕴含能量的水晶，可用于高级配方。堆叠: 250",
+      "maxStack": 250,
+      "textureResource": ".Resources.EnergyCrystal.png"
+    }
+  ],
+  "ores": [
+    {
+      "codeName": "ImprovePlayable_EnergyCrystalOre",
+      "displayName": "能量水晶矿",
+      "description": "可提取能量水晶。耐久: 50",
+      "health": 50,
+      "textureResource": ".Resources.EnergyCrystalOre.png",
+      "dropItemCodeName": "ImprovePlayable_EnergyCrystal",
+      "minDrop": 1,
+      "maxDrop": 3,
+      "replaceBlockCodeName": "rock",
+      "spawnMinY": 400.0,
+      "spawnMaxY": 1000.0,
+      "veinSize": 12,
+      "frequency": 0.19
+    }
+  ],
+  "weapons": [
+    {
+      "codeName": "ThanosGun",
+      "displayName": "能量步枪",
+      "description": "高能步枪，发射能量弹。",
+      "damage": 15,
+      "fireRate": 2.0,
+      "bulletSpeed": 25.0,
+      "critChance": 0.05,
+      "critMultiplier": 3.0,
+      "textureResource": ".Resources.ThanosGun.png",
+      "bulletTexture": ".Resources.PurpleBullet.png"
+    }
+  ],
+  "blocks": [
+    {
+      "codeName": "ImprovePlayable_ObsidianWall",
+      "displayName": "黑曜石墙",
+      "description": "坚硬的火山岩石墙体。耐久: 500 硬度: 6000 重量: 500",
+      "health": 500,
+      "hardness": 6000,
+      "weight": 500.0,
+      "textureResource": ".Resources.ObsidianWall.png"
+    }
+  ],
+  "devices": [
+    {
+      "codeName": "ImprovePlayable_EnergyCrystalArmor",
+      "displayName": "能量水晶护甲",
+      "description": "基础护甲。防御: 2",
+      "deviceType": "Armor",
+      "customValue": 2.0,
+      "cooldown": 0.0,
+      "duration": 0.0
+    },
+    {
+      "codeName": "ImprovePlayable_Teleporter",
+      "displayName": "能量传送器",
+      "description": "瞬移到鼠标位置。冷却: 30秒",
+      "deviceType": "Teleport",
+      "customValue": 0.0,
+      "cooldown": 30.0,
+      "duration": 0.0
+    },
+    {
+      "codeName": "ImprovePlayable_SuperFlashLight",
+      "displayName": "能量手电",
+      "description": "超强手电，亮度极高。照明范围: 80",
+      "deviceType": "Flashlight",
+      "customValue": 80.0,
+      "cooldown": 0.0,
+      "duration": 0.0
+    }
+  ],
+  "defenses": [
+    {
+      "codeName": "ImprovePlayable_TurretEnergy",
+      "displayName": "能量炮塔",
+      "description": "基础炮塔改良型。伤害: 8 射程: 16 冷却: 0.5 探测: 20",
+      "hp": 50,
+      "rangeDetection": 20.0,
+      "attackRange": 16.0,
+      "attackDamage": 8,
+      "attackNb": 2,
+      "attackCooldown": 0.5,
+      "bulletTexture": ".Resources.PurpleBullet.png"
+    }
+  ],
+  "machines": [
+    {
+      "codeName": "ImprovePlayable_AutoBuilder",
+      "displayName": "modV1",
+      "description": "用于制造模组物品的专用组装机。放置后使用交互键打开。",
+      "templateCodeName": "autoBuilderMK1"
+    },
+    {
+      "codeName": "ImprovePlayable_UraniumGenerator",
+      "displayName": "铀发电机",
+      "description": "铀能自律发电机，制造后即可持续发电（5kW）。",
+      "templateCodeName": "reactor"
+    }
+  ]
+}

@@ -22,6 +22,14 @@ namespace ImprovePlayable
             return buffer;
         }
 
+        // 从嵌入资源加载文本字符串
+        public static string LoadResourceString(string resourceName)
+        {
+            byte[] bytes = LoadResourceBytes(resourceName);
+            if (bytes == null || bytes.Length == 0) return null;
+            return System.Text.Encoding.UTF8.GetString(bytes);
+        }
+
         // 从图片数据创建 Texture2D
         public static Texture2D CreateTexture(byte[] imageData)
         {
