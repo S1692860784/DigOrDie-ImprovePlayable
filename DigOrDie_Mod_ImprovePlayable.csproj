@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+
+    <TargetFramework>net35</TargetFramework>
+    
+    <AssemblyName>ImprovePlayable</AssemblyName>
+    <Product>improve playable</Product>
+    <Authors>SHUAJI</Authors>
+    <Description>提升原版可玩性，拓展游戏可玩内容的 Dig or Die 模组</Description>
+    <Version>1.0.0</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>5</LangVersion> 
+    <RootNamespace>ImprovePlayable</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 依赖项引用 (保持不变，路径已确认是正确的) -->
+    <Reference Include="BepInEx">
+      <HintPath>E:\SteamLibrary\steamapps\common\Dig or Die\BepInEx\core\BepInEx.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>E:\SteamLibrary\steamapps\common\Dig or Die\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>E:\SteamLibrary\steamapps\common\Dig or Die\DigOrDie_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>E:\SteamLibrary\steamapps\common\Dig or Die\DigOrDie_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\*.png">
+      <LogicalName>.Resources.%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="copy &quot;$(TargetPath)&quot; &quot;E:\SteamLibrary\steamapps\common\Dig or Die\BepInEx\plugins\$(TargetFileName)&quot;" />
+  </Target>
+</Project>
