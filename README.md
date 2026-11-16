@@ -37,15 +37,23 @@
 ## 目录架构
 
 ```text
-├── Core/          # 模组入口、生命周期管理与数据编排
+├── Core/          # 模组入口、生命周期管理与编排中心
+├── Modules/       # 领域内容模块 (Weapon/Block/Mining/Machine/Defense/Monster/Recipe等)
 ├── Factories/     # 物品、方块、怪物、武器与防御塔生产工厂
 ├── Patches/       # Harmony 运行时切片补丁
 ├── Systems/       # 生态子系统（刷怪、环境事件等）
-├── Models/        # 数据模型与实体定义
+├── Models/        # 数据模型与 JSON 配置定义
 ├── Debugging/     # 调试指令、按键监听与辅助工具
-├── Common/        # 资源加载与通用工具
+├── Common/        # 资源加载、JSON 帮助类与通用工具
 └── Resources/     # 模组内置纹理与素材
 ```
+
+---
+
+## JSON 数据驱动配置
+
+模组在首次运行时会自动在 `BepInEx/config/ImprovePlayable/` 下生成 `Monsters.json` 配置文件。
+玩家与开发者可直接通过编辑该文件，无须重新编译代码即可自定义怪物的**血量、移动速度、攻击力、攻击范围、攻击冷却、AI 行为类型及自然生成深度**。若外部文件不存在，模组将自动使用内置默认配置无缝回退。
 
 ---
 

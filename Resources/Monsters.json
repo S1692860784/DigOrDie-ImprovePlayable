@@ -1,0 +1,68 @@
+{
+  "monsters": [
+    {
+      "codeName": "ImprovePlayable_ThanosMinion",
+      "displayName": "灭霸小兵",
+      "textureResource": ".Resources.ThanosMinion.png",
+      "hp": 500,
+      "speed": 6.0,
+      "damage": 20,
+      "range": 1.5,
+      "attackCooldown": 1.0,
+      "aiType": "Ground",
+      "bulletTexture": "",
+      "bulletSpeed": 0.0,
+      "spawnMinY": 0.0,
+      "spawnMaxY": 2000.0,
+      "spawnSkyOnly": false
+    },
+    {
+      "codeName": "ImprovePlayable_FlameLizard",
+      "displayName": "火焰蜥蜴",
+      "textureResource": ".Resources.FlameLizard.png",
+      "hp": 200,
+      "speed": 8.0,
+      "damage": 30,
+      "range": 1.2,
+      "attackCooldown": 0.5,
+      "aiType": "Flying",
+      "bulletTexture": "",
+      "bulletSpeed": 0.0,
+      "spawnMinY": 0.0,
+      "spawnMaxY": 2000.0,
+      "spawnSkyOnly": false
+    },
+    {
+      "codeName": "ImprovePlayable_EnergyCannon",
+      "displayName": "能量炮手",
+      "textureResource": ".Resources.ThanosMinion.png",
+      "hp": 400,
+      "speed": 4.0,
+      "damage": 35,
+      "range": 25.0,
+      "attackCooldown": 2.0,
+      "aiType": "GroundRanged",
+      "bulletTexture": ".Resources.PurpleBullet.png",
+      "bulletSpeed": 15.0,
+      "spawnMinY": 600.0,
+      "spawnMaxY": 1000.0,
+      "spawnSkyOnly": false
+    },
+    {
+      "codeName": "ImprovePlayable_GhostWatcher",
+      "displayName": "幽灵观察者",
+      "textureResource": ".Resources.FlameLizard.png",
+      "hp": 150,
+      "speed": 6.0,
+      "damage": 15,
+      "range": 18.0,
+      "attackCooldown": 1.0,
+      "aiType": "FlyingRanged",
+      "bulletTexture": ".Resources.PurpleBullet.png",
+      "bulletSpeed": 15.0,
+      "spawnMinY": 0.0,
+      "spawnMaxY": 2000.0,
+      "spawnSkyOnly": true
+    }
+  ]
+}
