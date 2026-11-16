@@ -11,7 +11,7 @@ namespace ImprovePlayable
 
         public bool IsEnabled(ModContentOptions options)
         {
-            return options.EnableBlocks;
+            return options.EnableDefenses;
         }
 
         public void Initialize()

@@ -1,68 +1,158 @@
 # DigOrDie_Mod_ImprovePlayable (improve playable)
 
-> 《Dig or Die》（挖或死）玩法扩展模组，旨在提升原版可玩性与丰富游戏内容。
-
-- **模组名称**：improve playable
-- **作者**：SHUAJI
-- **开发框架**：BepInEx 5.x + Harmony
-- **目标运行时**：.NET Framework 3.5 (Unity Mono)
+> 《Dig or Die》（挖或死）高可玩性扩展模组框架。
+> 采用 **Module 领域解耦** 与 **JSON 双层数据驱动** 架构设计，支持免编译自由扩展怪物、矿脉、武器、电力与防御设施。
 
 ---
 
-## 核心特性
-
-1. **矿产与资源生态**
-   - 新增「能量水晶」与「能量水晶矿脉」（自然生成于地下 400~1000 深度，由坚硬岩石包裹）。
-   - 击败特定原版怪物（猎犬、萤火虫、疯狂螃蟹等）均有几率掉落能量水晶。
-   - 新增对应各类矿物（含原版与模组矿物）的便携探测器。
-
-2. **装备与防御科技**
-   - **高能武器**：能量步枪（ThanosGun），高射速能量弹夹带暴击机制。
-   - **防御建筑**：改良型 360° 能量炮塔（高射程、高探测、等离子伤害）。
-   - **辅助装置**：能量瞬移传送器、超长照射能量手电、能量水晶护甲。
-   - **自动化设施**：自律型铀能发电机（持续提供 5kW 电力）、模组专用制造台。
-
-3. **敌人与挑战扩展**
-   - 新增近战与远程敌人类型（灭霸小兵、火焰蜥蜴、能量炮手、幽灵观察者）。
-   - 具备独立地面/飞行寻路 AI、避障反弹与日夜差异掉落机制。
-   - 集成刺激剂（Stim）环境事件，动态影响怪物攻击频率与移动表现。
-
-4. **体验与兼容性改良**
-   - 兼容创造模式/作弊模式下的自动建造逻辑。
-   - 修复防御塔与自律设备对角色/水流的碰撞干涉。
-   - 完善的中文本地化文本注入。
-
----
-
-## 目录架构
+## 目录与架构
 
 ```text
-├── Core/          # 模组入口、生命周期管理与编排中心
-├── Modules/       # 领域内容模块 (Weapon/Block/Mining/Machine/Defense/Monster/Recipe等)
-├── Factories/     # 物品、方块、怪物、武器与防御塔生产工厂
-├── Patches/       # Harmony 运行时切片补丁
-├── Systems/       # 生态子系统（刷怪、环境事件等）
-├── Models/        # 数据模型与 JSON 配置定义
-├── Debugging/     # 调试指令、按键监听与辅助工具
-├── Common/        # 资源加载、JSON 帮助类与通用工具
-└── Resources/     # 模组内置纹理与素材
+├── Core/          # [核心生命周期] 模组入口 (ImprovePlayablePlugin)、编排中心 (ModManager)、数据与物理桥 (GameDataManager)、配方管理器 (RecipeManager)
+├── Modules/       # [领域内容模块] Weapon/Block/Mining/Machine/Defense/Device/Monster/Recipe 等领域模块
+├── Factories/     # [资产底层工厂] Block/Bullet/Defense/Device/Item/Monster/Surface/WeaponFactory
+├── Patches/       # [Harmony 运行时切片补丁] 怪物 AI 修复、物理碰撞穿透、创造模式兼容等挂钩
+├── Systems/       # [游戏子系统] 动态刷怪系统 (SpawnManager)、刺激剂环境系统 (StimEnvironmentManager)
+├── Models/        # [数据实体] 强类型 JSON 实体配置 (MonsterConfig, ItemConfig, BulletConfig)
+├── Debugging/     # [调试工具] 调试热键监听 (InputHandler)、实体诊断 (DebugHelper)
+├── Common/        # [基础设施] JSON 容灾加载器 (JsonConfigHelper)、内嵌资源提取 (ResourceLoader)
+└── Resources/     # [内置素材与配置模板] Items.json, Monsters.json, Recipes.json, PNG贴图
 ```
 
 ---
 
-## JSON 数据驱动配置
+## 模块按需开关指南
 
-模组在首次运行时会自动在 `BepInEx/config/ImprovePlayable/` 目录下生成以下配置文件：
-- **`Monsters.json`**：怪物的血量、移动速度、攻击力、攻击范围、攻击冷却、AI 行为类型及自然生成深度。
-- **`Items.json`**：材料（堆叠上限）、矿脉（生成深度/矿脉大小/概率/掉落）、武器（伤害/射速/暴击/弹速）、方块、设备与防御炮塔。
-- **`Recipes.json`**：所有物品的合成台等级与所需材料配方。
+若在启动游戏时不需要某些模块，提供以下两种轻量修改方式：
 
-玩家与开发者可直接通过文本编辑器调整数值或添加新条目，无需重新编译代码即可即时生效；若外部文件缺失，模组会自动使用内嵌默认资源进行安全回退。
+### 方式 1：通过 BepInEx 配置文件（开关整个功能模块）
+首次启动后，在游戏目录的 `BepInEx/config/com.shuaji.digordie.improveplayable.cfg` 中直接将对应项改为 `false`：
+
+```ini
+[Content]
+EnableBlocks = true       # 自定义建筑与方块
+EnableDefenses = true     # 自动防御炮塔
+EnableMachines = true     # 电力发电机与模组制造机
+EnableWeapons = true      # 自定义武器与专属弹道
+EnableDevices = true      # 功能装备（护甲、传送器、能量手电）
+EnableOres = true         # 矿脉自然生成、材料与矿物探测器
+EnableMonsters = true     # 自定义怪物生态与 AI
+EnableRecipes = true      # 注入工作台合成配方
+EnableLocalization = true # 中文本地化文本
+
+[Debug]
+EnableHotkeys = false     # 调试热键（F1~F12）
+```
+
+### 方式 2：通过 JSON 配置文件（精准移除/停用具体单品）
+在 `BepInEx/config/ImprovePlayable/` 下找到对应 JSON 文件，直接删除不需要的条目即可，游戏启动时不会注册该物品。
 
 ---
 
-## 安装与使用
+## 底层功能扩展指南（如何添加新内容）
 
-1. 确保游戏已安装 BepInEx 5.x 框架。
-2. 将编译生成的 `ImprovePlayable.dll` 放置在游戏根目录的 `BepInEx\plugins` 文件夹下。
-3. 启动游戏即可体验。可在 BepInEx 配置文件中开启或关闭调试按键（快捷键 F1~F8）。
+所有数据均支持在 `BepInEx/config/ImprovePlayable/` 外部 JSON 中热改，无需重新编译 C# 代码。
+
+### 1. 新增一种怪物（Monsters.json）
+
+在 `monsters` 数组中追加对象：
+```json
+{
+  "codeName": "MyMod_FlameBat",
+  "displayName": "熔岩蝙蝠",
+  "textureResource": ".Resources.FlameLizard.png",
+  "hp": 250,
+  "speed": 7.5,
+  "damage": 25,
+  "range": 15.0,
+  "attackCooldown": 1.2,
+  "aiType": "FlyingRanged",
+  "bulletTexture": ".Resources.PurpleBullet.png",
+  "bulletSpeed": 18.0,
+  "spawnMinY": 500.0,
+  "spawnMaxY": 1200.0,
+  "spawnSkyOnly": true
+}
+```
+- **aiType 支持**：`Ground`（地面近战）、`Flying`（飞行冲刺）、`GroundRanged`（地面远程拉扯）、`FlyingRanged`（空中悬浮射击）。
+- **底层特性**：AI 补丁已实现全向矢量控制与射程阻断，地面远程怪不会无脑冲撞玩家，飞行怪自带持续浮力补偿与视线锁定。
+
+### 2. 新增矿石与自然矿脉生成（Items.json -> ores）
+
+在 `ores` 数组中追加：
+```json
+{
+  "codeName": "ImprovePlayable_TitaniumOre",
+  "displayName": "钛矿石",
+  "description": "高强度金属矿。耐久: 80",
+  "health": 80,
+  "textureResource": ".Resources.EnergyCrystalOre.png",
+  "dropItemCodeName": "aluminium",
+  "minDrop": 1,
+  "maxDrop": 4,
+  "replaceBlockCodeName": "hardRock",
+  "spawnMinY": 600.0,
+  "spawnMaxY": 1500.0,
+  "veinSize": 10,
+  "frequency": 0.15
+}
+```
+- 底层会自动注册为自然方块，并挂钩世界生成算法，在深度 `spawnMinY` ~ `spawnMaxY` 替换指定的岩石块，且自动派生该矿石的专用探测器。
+
+### 3. 新增电力设备 / 发电机（Items.json -> machines）
+
+```json
+{
+  "codeName": "ImprovePlayable_SolarReactor",
+  "displayName": "聚能核反应堆",
+  "description": "持续输出高额清洁电力的发电机（15kW）。",
+  "templateCodeName": "reactor",
+  "electricValue": 15000
+}
+```
+- **electricValue**：电力值。正数为**输出发电**（单位：瓦特 W，15000 即 15kW），负数为耗电。
+- 底层已通过 `GameDataManager` 将其物理标记设置为 `m_isBlock = 0`，放置后正常通电且不阻碍角色移动与水流。
+
+### 4. 新增自动防御炮塔（Items.json -> defenses）
+
+```json
+{
+  "codeName": "ImprovePlayable_SniperTurret",
+  "displayName": "高能狙击炮塔",
+  "description": "超远距离等离子防御塔。伤害: 40 射程: 30",
+  "hp": 100,
+  "rangeDetection": 35.0,
+  "attackRange": 30.0,
+  "attackDamage": 40,
+  "attackNb": 1,
+  "attackCooldown": 1.5,
+  "bulletTexture": ".Resources.PurpleBullet.png"
+}
+```
+- 底层基于 `CItem_Defense` 扩展，拥有独立的攻击参数与专属弹道，物理层自动注册为可通行防御设施。
+
+### 5. 新增合成配方（Recipes.json）
+
+```json
+{
+  "resultCodeName": "ImprovePlayable_SniperTurret",
+  "machineLevel": 0,
+  "ingredients": [
+    { "itemCodeName": "ImprovePlayable_EnergyCrystal", "count": 15 },
+    { "itemCodeName": "iron", "count": 10 }
+  ]
+}
+```
+- **machineLevel**：`0` 代表模组专用制造台（modV1），`1`~`6` 对应原版工作台 MK I ~ ULTIMATE。
+- 支持 1~3 种原版或模组材料任意组合。
+
+---
+
+## 常用调试热键（按键需在配置中开启）
+
+- **F1**：显示玩家当前物理坐标与所处世界层级。
+- **F5**：直接在玩家脚下掉落一把能量步枪（ThanosGun）。
+- **F8**：在鼠标光标位置直接放置一个能量水晶矿方块。
+- **F9**：在地下强行触发一次矿脉自然生成测试。
+- **F10**：控制台输出游戏中所有怪物的注册 CodeName。
+- **F11 / F12**：在鼠标位置直接召唤自定义怪物。

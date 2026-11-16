@@ -9,7 +9,7 @@ namespace ImprovePlayable
 
         public bool IsEnabled(ModContentOptions options)
         {
-            return options.EnableBlocks;
+            return options.EnableMachines;
         }
 
         public void Initialize()
@@ -33,6 +33,11 @@ namespace ImprovePlayable
 
                 if (item != null)
                 {
+                    if (cfg.electricValue != 0 && item is CItem_Machine)
+                    {
+                        HarmonyLib.Traverse.Create(item).Field("m_electricValue").SetValue(cfg.electricValue);
+                    }
+
                     if (ModAssembler == null && cfg.codeName == "ImprovePlayable_AutoBuilder")
                     {
                         ModAssembler = item;

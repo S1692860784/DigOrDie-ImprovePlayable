@@ -6,9 +6,12 @@ namespace ImprovePlayable
     public sealed class ModContentOptions
     {
         public bool EnableBlocks = true;
-        public bool EnableMonsters = true;
-        public bool EnableOres = true;
+        public bool EnableDefenses = true;
+        public bool EnableMachines = true;
         public bool EnableWeapons = true;
+        public bool EnableDevices = true;
+        public bool EnableOres = true;
+        public bool EnableMonsters = true;
         public bool EnableRecipes = true;
         public bool EnableLocalization = true;
     }

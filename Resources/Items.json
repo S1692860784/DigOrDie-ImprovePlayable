@@ -104,7 +104,8 @@
       "codeName": "ImprovePlayable_UraniumGenerator",
       "displayName": "铀发电机",
       "description": "铀能自律发电机，制造后即可持续发电（5kW）。",
-      "templateCodeName": "reactor"
+      "templateCodeName": "reactor",
+      "electricValue": 5000
     }
   ]
 }

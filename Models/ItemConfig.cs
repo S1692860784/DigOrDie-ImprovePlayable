@@ -92,6 +92,7 @@ namespace ImprovePlayable
         public string displayName;
         public string description;
         public string templateCodeName;
+        public int electricValue; // 正数发电，负数耗电 (单位 W，如 5000 为 5kW)
     }
 
     [Serializable]

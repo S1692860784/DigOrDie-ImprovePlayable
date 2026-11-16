@@ -13,7 +13,7 @@ namespace ImprovePlayable
 
         public bool IsEnabled(ModContentOptions options)
         {
-            return options.EnableWeapons;
+            return options.EnableDevices;
         }
 
         public void Initialize()

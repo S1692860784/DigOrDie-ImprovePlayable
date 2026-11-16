@@ -27,22 +27,28 @@ namespace ImprovePlayable
     internal static class ModConfig
     {
         public static ConfigEntry<bool> EnableBlocks;
-        public static ConfigEntry<bool> EnableMonsters;
-        public static ConfigEntry<bool> EnableOres;
+        public static ConfigEntry<bool> EnableDefenses;
+        public static ConfigEntry<bool> EnableMachines;
         public static ConfigEntry<bool> EnableWeapons;
+        public static ConfigEntry<bool> EnableDevices;
+        public static ConfigEntry<bool> EnableOres;
+        public static ConfigEntry<bool> EnableMonsters;
         public static ConfigEntry<bool> EnableRecipes;
         public static ConfigEntry<bool> EnableLocalization;
         public static ConfigEntry<bool> EnableDebugHotkeys;
 
         public static void Bind(ConfigFile config)
         {
-            EnableBlocks = config.Bind("Content", "EnableBlocks", true, "是否加载自定义方块�?);
-            EnableMonsters = config.Bind("Content", "EnableMonsters", true, "是否加载自定义怪物与刷怪逻辑�?);
-            EnableOres = config.Bind("Content", "EnableOres", true, "是否加载自定义矿物与矿脉生成�?);
-            EnableWeapons = config.Bind("Content", "EnableWeapons", true, "是否加载自定义武器与子弹�?);
-            EnableRecipes = config.Bind("Content", "EnableRecipes", true, "是否注入配方到工作台�?);
-            EnableLocalization = config.Bind("Content", "EnableLocalization", true, "是否加载本地化文本�?);
-            EnableDebugHotkeys = config.Bind("Debug", "EnableHotkeys", false, "是否启用调试热键与调试助手�?);
+            EnableBlocks = config.Bind("Content", "EnableBlocks", true, "是否加载自定义建筑与方块。");
+            EnableDefenses = config.Bind("Content", "EnableDefenses", true, "是否加载自动防御炮塔。");
+            EnableMachines = config.Bind("Content", "EnableMachines", true, "是否加载电力发电机与制造机。");
+            EnableWeapons = config.Bind("Content", "EnableWeapons", true, "是否加载自定义武器与弹道。");
+            EnableDevices = config.Bind("Content", "EnableDevices", true, "是否加载功能装备（护甲、传送器、手电等）。");
+            EnableOres = config.Bind("Content", "EnableOres", true, "是否加载矿物生态与矿石探测器。");
+            EnableMonsters = config.Bind("Content", "EnableMonsters", true, "是否加载自定义怪物与AI。");
+            EnableRecipes = config.Bind("Content", "EnableRecipes", true, "是否注入工作台配方。");
+            EnableLocalization = config.Bind("Content", "EnableLocalization", true, "是否加载本地化文本。");
+            EnableDebugHotkeys = config.Bind("Debug", "EnableHotkeys", false, "是否启用调试热键（F1~F12）。");
         }
 
         public static ModContentOptions ToContentOptions()
@@ -50,9 +56,12 @@ namespace ImprovePlayable
             return new ModContentOptions
             {
                 EnableBlocks = EnableBlocks.Value,
-                EnableMonsters = EnableMonsters.Value,
-                EnableOres = EnableOres.Value,
+                EnableDefenses = EnableDefenses.Value,
+                EnableMachines = EnableMachines.Value,
                 EnableWeapons = EnableWeapons.Value,
+                EnableDevices = EnableDevices.Value,
+                EnableOres = EnableOres.Value,
+                EnableMonsters = EnableMonsters.Value,
                 EnableRecipes = EnableRecipes.Value,
                 EnableLocalization = EnableLocalization.Value
             };
@@ -172,10 +181,7 @@ namespace ImprovePlayable
             ModContentOptions options = ModConfig.ToContentOptions();
             ModManager.InitializeContent(options);
 
-            if (options.EnableBlocks || options.EnableOres || options.EnableWeapons)
-            {
-                GameDataManager.RebuildAndExtendItemPluginData();
-            }
+            GameDataManager.RebuildAndExtendItemPluginData();
 
             if (options.EnableRecipes)
             {
